@@ -15,7 +15,7 @@
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true"><span>✣</span></div>
-        <div><div class="brand-kicker">NACHES LEARNING HUB • AN ORIGINAL ADVENTURE</div><h1>COORDINATE <span>PIXEL QUEST</span></h1><div class="brand-sub">Explore Crystal Canyon and the Sky Isles, one coordinate at a time.</div></div>
+        <div><div class="brand-kicker">NACHES LEARNING HUB • AN ORIGINAL ADVENTURE</div><h1>COORDINATE <span>PIXEL QUEST</span></h1><div class="brand-sub">Explore Moonveil Marsh and Ember Peaks with 24×24, 28×28 and 32×32 coordinate quests.</div></div>
       </div>
       <div class="top-actions">
         <div class="level-chip"><span class="level-stars">✦</span> <span id="levelLabel">LVL 1 · APPRENTICE</span><div class="xp-track"><div id="xpFill" class="xp-fill"></div></div></div>
@@ -35,7 +35,7 @@
           <div class="progress-meter"><div class="meter-label"><span>WORLD RESTORED</span><strong id="worldPct">0%</strong></div><div class="meter-track"><div id="worldBar"></div></div></div>
         </div>
         <section class="panel quest-log" aria-label="Restoration quests">
-          <div class="panel-heading"><div><div class="section-eyebrow">THE RESTORATION LOG</div><h2>Adventure Quests</h2></div><span id="questCount" class="counter">0 / 15</span></div>
+          <div class="panel-heading"><div><div class="section-eyebrow">THE RESTORATION LOG</div><h2>Adventure Quests</h2></div><span id="questCount" class="counter">0 / 25</span></div>
           <div id="questList" class="quest-list"></div>
         </section>
       </aside>
@@ -68,24 +68,43 @@
           <div class="stat-row"><span>✦ Experience</span><strong id="statXP">0 XP</strong></div>
           <div class="stat-row"><span>▦ Cells painted</span><strong id="statCells">0</strong></div>
           <div class="stat-row"><span>◎ Accuracy</span><strong id="statAccuracy">100%</strong></div>
-          <div class="stat-row"><span>◈ Restorations</span><strong id="statQuests">0 / 15</strong></div>
-          <div class="stat-row"><span>⚑ Badges</span><strong id="statBadges">0 / 8</strong></div>
+          <div class="stat-row"><span>◈ Restorations</span><strong id="statQuests">0 / 25</strong></div>
+          <div class="stat-row"><span>⚑ Badges</span><strong id="statBadges">0 / 10</strong></div>
         </section>
         <section class="panel lesson-card"><div class="section-eyebrow">MATH TOOLKIT</div><h3>Coordinates = <span>(X, Y)</span></h3><div class="coordinate-demo"><div class="demo-x">X → move right</div><div class="demo-y">Y ↑ move up</div><div class="demo-origin">(1,1) starts at the bottom left</div></div><p>In painting puzzles, coordinates tell you which <em>square</em> to color—not a grid-line intersection.</p></section>
       </aside>
     </main>
-    <footer class="site-footer"><span>COORDINATE PIXEL QUEST • VERSION 2.0</span><span>Progress saves in this browser • No account required</span></footer>
+    <footer class="site-footer"><span>COORDINATE PIXEL QUEST • VERSION 3.1</span><span>Progress saves in this browser • No account required</span></footer>
   </div>
 
   <div id="questModal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="paintingTitle" hidden>
     <div class="modal modal-paint">
       <div class="modal-head"><div><div class="section-eyebrow">PIXEL RESTORATION CHALLENGE <span id="paintRegion"></span></div><h2 id="paintingTitle">The Sun Lantern</h2></div><button id="closeQuest" class="close-btn" type="button" aria-label="Save and close puzzle">✕</button></div>
       <div class="paint-layout">
-        <section class="art-section"><div class="grid-heading"><span>RESTORATION CANVAS <b id="gridSize">8 × 8</b></span><span id="filledLabel">0 / 32 cells</span></div><div class="focus-toolbar"><span id="focusLabel" aria-live="polite">FULL ARTWORK</span><button id="btnFocus" class="tiny-btn" type="button" aria-pressed="false" hidden>⊞ Focus on a 10×10 area</button></div><div id="paintArea" class="paint-area"><div id="coordinateGrid" class="coordinate-grid" aria-label="Coordinate painting grid"></div></div><div class="grid-footnote">Cells use <strong>bottom-left (1, 1)</strong>. X increases right → and Y increases upward ↑.</div></section>
+        <section class="art-section"><div class="grid-heading"><span>RESTORATION CANVAS <b id="gridSize">8 × 8</b></span><span id="filledLabel">0 / 32 cells</span></div><div class="focus-toolbar"><span id="focusLabel" aria-live="polite">FULL ARTWORK</span><button id="btnAutoBrush" class="tiny-btn" type="button" aria-pressed="true" hidden>✓ Automatic brush: ON</button><button id="btnFocus" class="tiny-btn" type="button" aria-pressed="false" hidden>⊞ Focus on a 10×10 area</button></div><div id="paintArea" class="paint-area"><div id="coordinateGrid" class="coordinate-grid" aria-label="Coordinate painting grid"></div></div><div class="grid-footnote">Cells use <strong>bottom-left (1, 1)</strong>. X increases right → and Y increases upward ↑.</div></section>
         <aside class="paint-side">
           <div class="painting-story" id="paintStory"></div>
           <div class="target-card"><div class="section-eyebrow">YOUR NEXT COORDINATE</div><div id="targetText" class="target-text">(1, 1)</div><div class="target-color" id="targetColor">Paint with Sun Gold</div><div class="target-instruction" id="targetInstruction">Select the matching brush color, then click the square.</div></div>
-          <div class="palette-block"><div class="palette-title">1. CHOOSE YOUR BRUSH</div><div id="colorPalette" class="color-palette"></div></div>
+          <div class="palette-block">
+  <div class="palette-title">1. CHOOSE YOUR BRUSH</div>
+  <div class="wheel-layout">
+    <div id="colorWheel" class="color-wheel" aria-label="Circular paint palette; click a color or the center to cycle" role="group">
+      <div id="wheelSwatches" class="wheel-swatches"></div>
+      <button id="btnWheelCycle" class="wheel-center" type="button" aria-label="Cycle to the next brush color"><span id="wheelCenterDot" class="wheel-center-dot"></span><strong id="wheelCenterName">Choose</strong><small>CLICK TO CYCLE</small></button>
+    </div>
+    <div class="wheel-actions"><button id="btnPrevColor" type="button" class="tiny-btn" title="Previous color">◀ Previous</button><button id="btnNextColor" type="button" class="tiny-btn" title="Next color">Next ▶</button></div>
+  </div>
+  <div id="colorPalette" class="color-palette" aria-label="Color palette swatches"></div>
+  <div class="shortcut-strip"><span id="shortcutSummary">Q ◀ / E ▶ · Right-click to cycle</span><button id="btnShortcutConfig" type="button" class="tiny-btn">Customize keys ⚙</button></div>
+  <div id="shortcutEditor" class="shortcut-editor" hidden>
+    <p>Click a shortcut, then press any letter or number. Changes save automatically.</p>
+    <div class="shortcut-fields"><label>Previous <button type="button" id="prevKeyBtn" class="tiny-btn"></button></label><label>Next <button type="button" id="nextKeyBtn" class="tiny-btn"></button></label></div>
+    <label class="shortcut-check"><input type="checkbox" id="enableColorHotkeys" checked> Enable keyboard color cycling</label>
+    <label class="shortcut-check"><input type="checkbox" id="enableColorRightClick" checked> Enable right-click color cycling</label>
+    <div id="shortcutMessage" class="small-muted" aria-live="polite">Esc cancels a key change.</div>
+    <button id="doneShortcutConfig" type="button" class="tiny-btn">Done</button>
+  </div>
+</div>
           <div class="assist-panel"><div class="palette-title">2. FIND THE COORDINATE</div><div id="paintingFeedback" class="painting-feedback" aria-live="polite">Read X first, then Y.</div><button class="btn btn-outline btn-full" id="btnHint" type="button">✧ Show row & column hint</button><p id="hintCount" class="small-muted">Hints are free. You can learn at your pace.</p></div>
           <div class="painting-progress"><div class="meter-label"><span>ARTWORK PROGRESS</span><strong id="puzzlePct">0%</strong></div><div class="meter-track"><div id="puzzleBar"></div></div></div>
           <button id="saveQuest" class="btn btn-ghost btn-full" type="button">← Return to the valley (auto-saves)</button>

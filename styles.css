@@ -15,3 +15,35 @@
 .focus-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:8px 0 3px;color:#c3dedb;font-size:10px;letter-spacing:.5px;font-weight:900}
 .focus-toolbar .tiny-btn{font-size:11px;padding:6px 9px;border:1px solid #d3ad78;color:#ffe2ad;background:#35536a}
 @media(max-width:570px){.region-progress{gap:4px}.region-step{gap:3px;padding:7px 4px;font-size:9px;line-height:1.2}.region-step small{font-size:8px}.region-step .step-symbol{font-size:10px}.focus-toolbar{font-size:9px}.focus-toolbar .tiny-btn{font-size:10px}}
+
+/* v3: expanded roadmap and large-coordinate accessibility */
+.region-progress{grid-template-columns:repeat(5,minmax(0,1fr))}
+.region-step{padding:9px 6px;gap:5px;font-size:10px}
+.focus-toolbar{justify-content:flex-start;gap:9px}
+#focusLabel{margin-right:auto}
+#btnAutoBrush[aria-pressed="true"]{background:#2a675c;color:#e6ffde;border-color:#83d1aa}
+#btnAutoBrush:focus-visible{outline:3px solid #ffda97}
+@media(max-width:1100px){.region-progress{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:570px){.region-progress{grid-template-columns:repeat(2,minmax(0,1fr))}.region-step{padding:7px 5px}.focus-toolbar{gap:6px}}
+
+/* v3.1 custom keyboard shortcuts + rotary paint wheel */
+.palette-block{border:1px solid #446881;border-radius:13px;background:rgba(11,31,52,.35);padding:13px;min-width:0}
+.wheel-layout{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin:3px 0 13px}
+.color-wheel{position:relative;width:174px;height:174px;flex:0 0 174px;border-radius:50%;background:radial-gradient(circle at 32% 24%,#406781 0%,#19344f 65%,#10263e 100%);border:3px solid #eac880;box-shadow:inset 0 0 0 6px #23455f,0 7px 22px #071726,0 0 20px #eac88023}
+.wheel-swatches{position:absolute;inset:0}
+.wheel-swatch{position:absolute;transform:translate(-50%,-50%);height:29px;width:29px;border-radius:50%;background:var(--color);border:2px solid #bdd4d9;box-shadow:0 2px 7px #001a31,inset 0 3px 4px #ffffff66;cursor:pointer;z-index:2}
+.wheel-swatch.selected{outline:3px solid #ffdf81;outline-offset:1px;transform:translate(-50%,-50%) scale(1.12);z-index:3}
+.wheel-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:89px;height:89px;border-radius:50%;background:linear-gradient(155deg,#30566d,#142a42);border:2px solid #b99c6b;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;color:#ffe6a9;padding:5px;text-align:center;z-index:1;cursor:pointer}
+.wheel-center-dot{width:25px;height:25px;border:2px solid #f4e0af;border-radius:50%;flex-shrink:0}
+.wheel-center strong{font-size:10px;line-height:1.05;max-width:76px}
+.wheel-center small{font-size:7px;color:#c4e6dc;letter-spacing:.4px}
+.wheel-actions{display:grid;gap:9px}
+.wheel-actions button,.shortcut-strip button,.shortcut-editor button{border:1px solid #b99b6c;border-radius:8px;background:#294c62;color:#ffe5ad;font-weight:800;cursor:pointer;padding:8px;font-size:11px}
+.shortcut-strip{margin-top:11px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:10px;color:#d6f0e4}
+.shortcut-editor{padding:12px;margin-top:10px;border:1px solid #7294a4;border-radius:10px;background:#152f49}
+.shortcut-editor p{font-size:11px;color:#c5dedd;margin:0 0 10px}
+.shortcut-fields{display:flex;gap:16px;flex-wrap:wrap;margin:5px 0 12px}.shortcut-fields label{display:flex;align-items:center;gap:6px;font-size:11px;color:#f8dea2;font-weight:bold}
+.shortcut-fields button{min-width:48px}.shortcut-fields button:focus-visible{outline:3px solid #ffdf81}
+.shortcut-check{display:flex;align-items:center;gap:8px;font-size:11px;margin:7px 0;color:#d7e7e6}.shortcut-check input{accent-color:#efce82;width:17px;height:17px}
+.shortcut-editor #shortcutMessage{line-height:1.45;min-height:18px}
+@media(max-width:570px){.color-wheel{width:154px;height:154px;flex-basis:154px}.wheel-swatch{width:25px;height:25px}.wheel-center{width:78px;height:78px}.wheel-center-dot{width:22px;height:22px}.wheel-center strong{font-size:9px}.wheel-layout{gap:9px}.wheel-actions{gap:5px}.shortcut-strip{font-size:9px}.palette-block{padding:9px}}

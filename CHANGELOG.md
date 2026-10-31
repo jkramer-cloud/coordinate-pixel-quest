@@ -1,18 +1,19 @@
-# Coordinate Pixel Quest — Changelog
+# Coordinate Pixel Quest — changelog
 
-## v2.0.0 — October 31, 2026
+## v3.1.0 — October 31, 2026
+- Circular color palette with color selection and central click-to-cycle button, plus previous/next controls and wheel scroll.
+- Right-click on paint grid or wheel to cycle; Shift + right-click cycles backward.
+- Configurable single-letter or digit keyboard shortcuts (defaults Q/E), with independently enabled keyboard/right-click options.
+- Stored preferences persist alongside existing game progress; manual selection overrides auto-brush on large canvases.
 
-- Added Crystal Canyon and the Sky Isles beyond the original Star Ridge.
-- Extended the map to 66×19 tiles, introduced canyon and sky terrain, bridges/gates, visual structures, and 5 new stars.
-- Added 7 new coordinate paintings: Heart of the Canyon, Canyon Fox Guardian, Canyon Observatory, Sky Lift, Whale of the Clouds, Floating Citadel, and Dawn Phoenix.
-- Introduced four 16×16 and three 20×20 art challenges, bringing the game to 15 quests and 1,443 required colored cells.
-- Crystal Canyon opens only after Festival of Stars; Sky Isles open only after the full canyon chapter and Sky Lift.
-- Added 3-chapter completion tracker, region labels, and expanded quest journal and Gallery.
-- Added Focus 10×10 painting view, enabled by default on small screens for larger artworks, with global coordinate labels.
-- Added two endgame badges, keeping all six original badges.
-- Preserved original localStorage save key, quest IDs, completion, XP, artwork, and earlier features.
-- Browser-tested all 15 quests, both stage gates, focused painting, saved-game compatibility and mobile/desktop layouts.
+## v3.0.0 — October 31, 2026
+- Added **Moonveil Marsh** after Dawn Phoenix: 5 quests, each 24×24.
+- Added **Ember Peaks** after Moonstone Causeway: 4 quests at 28×28 and final 32×32 Sunspire.
+- Expanded eastward map with two distinct biomes and two new gated crossings.
+- Increased progression to 25 restorations, 10 achievements and additional hidden stars.
+- Enabled focused 10×10 view by default for 24×24+ puzzles, with unchanged full-world coordinate labels.
+- Added optional automatic color brush for large puzzles; positional math remains required.
+- Retained save key and all original 15 quests, their IDs, pattern data, and rewards.
 
-## v1.0.0 — October 31, 2026
-
-- Initial eight-landmark Pixel Valley adventure, restoration painting, map navigation, XP, achievements, Gallery, and saved progress.
+## v2.0.0
+- Crystal Canyon (16×16) and Sky Isles (20×20) expansions.
