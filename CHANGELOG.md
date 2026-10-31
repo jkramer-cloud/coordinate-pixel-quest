@@ -1,11 +1,18 @@
 # Coordinate Pixel Quest — Changelog
 
-## v1.0.0 (2026-10-31)
-- Released a standalone, mobile-friendly Pixel Valley exploration and restoration game.
-- Added eight original pixel-art landmark quests with 8×8, 10×10, and 12×12 coordinate grids.
-- Added arrow-key, WASD, directional-pad, and tap-to-travel movement.
-- Added quest prerequisite logic and a bridge that unlocks the eastern side of the map.
-- Added feedback on wrong coordinates and brush colors, free row/column hints, XP, levels, and achievements.
-- Added six discovery stars, gallery, landscape color restoration, and optional map-coordinate overlay.
-- Added per-cell browser-local autosave, settings, confirmation before reset, and accessibility labels.
-- Kept the game repository separate from Naches Learning Hub files.
+## v2.0.0 — October 31, 2026
+
+- Added Crystal Canyon and the Sky Isles beyond the original Star Ridge.
+- Extended the map to 66×19 tiles, introduced canyon and sky terrain, bridges/gates, visual structures, and 5 new stars.
+- Added 7 new coordinate paintings: Heart of the Canyon, Canyon Fox Guardian, Canyon Observatory, Sky Lift, Whale of the Clouds, Floating Citadel, and Dawn Phoenix.
+- Introduced four 16×16 and three 20×20 art challenges, bringing the game to 15 quests and 1,443 required colored cells.
+- Crystal Canyon opens only after Festival of Stars; Sky Isles open only after the full canyon chapter and Sky Lift.
+- Added 3-chapter completion tracker, region labels, and expanded quest journal and Gallery.
+- Added Focus 10×10 painting view, enabled by default on small screens for larger artworks, with global coordinate labels.
+- Added two endgame badges, keeping all six original badges.
+- Preserved original localStorage save key, quest IDs, completion, XP, artwork, and earlier features.
+- Browser-tested all 15 quests, both stage gates, focused painting, saved-game compatibility and mobile/desktop layouts.
+
+## v1.0.0 — October 31, 2026
+
+- Initial eight-landmark Pixel Valley adventure, restoration painting, map navigation, XP, achievements, Gallery, and saved progress.
