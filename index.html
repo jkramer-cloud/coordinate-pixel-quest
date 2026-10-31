@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101f3d">
+  <meta name="description" content="Restore a magical pixel world by plotting coordinates. A free, browser-based coordinate adventure for students.">
+  <title>Coordinate Pixel Quest — Restore Pixel Valley</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span>✣</span></div>
+        <div><div class="brand-kicker">NACHES LEARNING HUB • AN ORIGINAL ADVENTURE</div><h1>COORDINATE <span>PIXEL QUEST</span></h1><div class="brand-sub">Restore Pixel Valley, one coordinate at a time.</div></div>
+      </div>
+      <div class="top-actions">
+        <div class="level-chip"><span class="level-stars">✦</span> <span id="levelLabel">LVL 1 · APPRENTICE</span><div class="xp-track"><div id="xpFill" class="xp-fill"></div></div></div>
+        <button id="btnHelp" class="btn btn-ghost" type="button">? <span>How to play</span></button>
+        <button id="btnGallery" class="btn btn-ghost" type="button">▦ <span>Gallery</span></button>
+        <button id="btnSettings" class="btn btn-ghost" type="button">⚙ <span>Settings</span></button>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <aside class="rail rail-left" aria-label="Adventure progress">
+        <div class="story-card">
+          <div class="section-eyebrow">CHAPTER 01 / THE LOST COLORS</div>
+          <div class="story-icon" aria-hidden="true">✧</div>
+          <h2>The valley has gone quiet.</h2>
+          <p>Find the shimmering landmarks and paint their missing pixels to bring the world back to life.</p>
+          <div class="progress-meter"><div class="meter-label"><span>WORLD RESTORED</span><strong id="worldPct">0%</strong></div><div class="meter-track"><div id="worldBar"></div></div></div>
+        </div>
+        <section class="panel quest-log" aria-label="Restoration quests">
+          <div class="panel-heading"><div><div class="section-eyebrow">THE RESTORATION LOG</div><h2>Adventure Quests</h2></div><span id="questCount" class="counter">0 / 8</span></div>
+          <div id="questList" class="quest-list"></div>
+        </section>
+      </aside>
+
+      <section class="world-column" aria-label="Pixel Valley adventure">
+        <div class="world-topline"><div><span class="location-dot"></span> <strong>PIXEL VALLEY</strong> <span id="regionName">— Sunlit Meadow</span></div><div class="world-top-actions"><button class="tiny-btn" id="btnCoords" type="button" aria-pressed="false"># Map grid: off</button><button class="tiny-btn" id="btnRecenter" type="button">⌖ Recenter</button></div></div>
+        <div class="map-frame">
+          <div class="map-ribbon"><span>✦</span> EXPLORE · DISCOVER · RESTORE <span>✦</span></div>
+          <canvas id="worldCanvas" width="950" height="570" tabindex="0" aria-label="Pixel Valley map. Use arrow keys or WASD to move. Tap a landmark to travel there." role="img"></canvas>
+          <div class="map-badge" id="mapBadge" aria-live="polite">✦ The lantern awaits.</div>
+          <div class="compass" aria-hidden="true">N<span>▲</span></div>
+        </div>
+        <div class="map-footer">
+          <div class="guide-strip"><span class="guide-dot"></span><span id="worldInstruction">Use WASD / arrow keys or tap a landmark to explore. Stand beside it and press Space.</span></div>
+          <div class="dpad" aria-label="Move character"><span></span><button type="button" data-move="0,-1" aria-label="Move up">▲</button><span></span><button type="button" data-move="-1,0" aria-label="Move left">◀</button><button type="button" data-move="0,1" aria-label="Move down">▼</button><button type="button" data-move="1,0" aria-label="Move right">▶</button></div>
+        </div>
+        <div class="map-caption"><span>🧭</span> Click anywhere on the map to walk there. Touch a glowing landmark to start traveling toward it.</div>
+      </section>
+
+      <aside class="rail rail-right" aria-label="Explorer tools">
+        <section class="panel companion-card">
+          <div class="section-eyebrow">YOUR GUIDE</div>
+          <div class="guide-character" aria-hidden="true"><div class="guide-fox">🦊</div><div class="fox-sparkle">✦</div></div>
+          <h2>Meet Pip!</h2><p id="pipText">Every lost color can be found with a pair of coordinates. Start with the Sun Lantern!</p>
+          <button class="btn btn-primary btn-full" id="btnGuide" type="button">✦ Find my next quest</button>
+        </section>
+        <section class="panel explorer-stats">
+          <div class="section-eyebrow">EXPLORER'S JOURNAL</div>
+          <div class="stat-row"><span>✦ Experience</span><strong id="statXP">0 XP</strong></div>
+          <div class="stat-row"><span>▦ Cells painted</span><strong id="statCells">0</strong></div>
+          <div class="stat-row"><span>◎ Accuracy</span><strong id="statAccuracy">100%</strong></div>
+          <div class="stat-row"><span>◈ Restorations</span><strong id="statQuests">0 / 8</strong></div>
+          <div class="stat-row"><span>⚑ Badges</span><strong id="statBadges">0 / 6</strong></div>
+        </section>
+        <section class="panel lesson-card"><div class="section-eyebrow">MATH TOOLKIT</div><h3>Coordinates = <span>(X, Y)</span></h3><div class="coordinate-demo"><div class="demo-x">X → move right</div><div class="demo-y">Y ↑ move up</div><div class="demo-origin">(1,1) starts at the bottom left</div></div><p>In painting puzzles, coordinates tell you which <em>square</em> to color—not a grid-line intersection.</p></section>
+      </aside>
+    </main>
+    <footer class="site-footer"><span>COORDINATE PIXEL QUEST • VERSION 1.0</span><span>Progress saves in this browser • No account required</span></footer>
+  </div>
+
+  <div id="questModal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="paintingTitle" hidden>
+    <div class="modal modal-paint">
+      <div class="modal-head"><div><div class="section-eyebrow">PIXEL RESTORATION CHALLENGE <span id="paintRegion"></span></div><h2 id="paintingTitle">The Sun Lantern</h2></div><button id="closeQuest" class="close-btn" type="button" aria-label="Save and close puzzle">✕</button></div>
+      <div class="paint-layout">
+        <section class="art-section"><div class="grid-heading"><span>RESTORATION CANVAS <b id="gridSize">8 × 8</b></span><span id="filledLabel">0 / 32 cells</span></div><div id="paintArea" class="paint-area"><div id="coordinateGrid" class="coordinate-grid" aria-label="Coordinate painting grid"></div></div><div class="grid-footnote">Cells use <strong>bottom-left (1, 1)</strong>. X increases right → and Y increases upward ↑.</div></section>
+        <aside class="paint-side">
+          <div class="painting-story" id="paintStory"></div>
+          <div class="target-card"><div class="section-eyebrow">YOUR NEXT COORDINATE</div><div id="targetText" class="target-text">(1, 1)</div><div class="target-color" id="targetColor">Paint with Sun Gold</div><div class="target-instruction" id="targetInstruction">Select the matching brush color, then click the square.</div></div>
+          <div class="palette-block"><div class="palette-title">1. CHOOSE YOUR BRUSH</div><div id="colorPalette" class="color-palette"></div></div>
+          <div class="assist-panel"><div class="palette-title">2. FIND THE COORDINATE</div><div id="paintingFeedback" class="painting-feedback" aria-live="polite">Read X first, then Y.</div><button class="btn btn-outline btn-full" id="btnHint" type="button">✧ Show row & column hint</button><p id="hintCount" class="small-muted">Hints are free. You can learn at your pace.</p></div>
+          <div class="painting-progress"><div class="meter-label"><span>ARTWORK PROGRESS</span><strong id="puzzlePct">0%</strong></div><div class="meter-track"><div id="puzzleBar"></div></div></div>
+          <button id="saveQuest" class="btn btn-ghost btn-full" type="button">← Return to the valley (auto-saves)</button>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div id="infoModal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" hidden>
+    <div class="modal modal-info"><div class="modal-head"><div><div class="section-eyebrow" id="infoKicker">YOUR FIELD GUIDE</div><h2 id="infoTitle">How to Play</h2></div><button class="close-btn" id="closeInfo" type="button" aria-label="Close panel">✕</button></div><div id="infoContent" class="info-body"></div></div>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="data.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
