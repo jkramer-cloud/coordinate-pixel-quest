@@ -62,3 +62,11 @@ The existing localStorage key `cpq_pixel_valley_v1` is preserved. Old quests ret
 **The Naches Learning Hub does not need new files** if its tile already links to the same game URL.
 
 No external libraries, API keys, logins, or backend are required.
+
+
+## v5.0 Living World update
+
+- Richer world rendering with enhanced terrain texture, ambient regional particles, brighter landmark halos, and a visible Pip companion.
+- New Graphics Quality setting: Low, Standard, or Enhanced.
+- New World Animation toggle for devices that need reduced motion or better performance.
+- All 50 quests, progress, and existing save compatibility are preserved.

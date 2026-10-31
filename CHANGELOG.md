@@ -1,5 +1,15 @@
 # Coordinate Pixel Quest — Changelog
 
+## v5.0 — Living World Graphics Update (October 31, 2026)
+
+- Added a richer visual presentation across the adventure world while preserving all 50 existing restorations and save compatibility.
+- Added Graphics Quality settings with Low, Standard, and Enhanced modes.
+- Added a World Animation toggle to reduce ambient effects on slower devices or for students who prefer less motion.
+- Improved the map presentation with stronger panel styling, richer backgrounds, ambient regional particles, enhanced landmark glow, and a visible Pip companion traveling with the player.
+- Kept the painting interface, side trails, large-grid focus mode, palette wheel, hotkeys, and all chapter progression intact.
+
+# Coordinate Pixel Quest — Changelog
+
 ## v4.0.0 — October 31, 2026
 - Added Prism Tundra (five 36×36 quests) after Sunspire.
 - Added Celestial Gardens (four 40×40 quests and 44×44 Heart of the Cosmos) after Prismatic Crossing.

@@ -16,7 +16,11 @@ let cam={x:0,y:0,w:0,h:0,tile:34};
 const canvas=$('worldCanvas'),ctx=canvas.getContext('2d');
 const questModal=$('questModal'), infoModal=$('infoModal');
 
-function blankState(){return {version:1,player:{x:5,y:9},done:[],paint:{},mistakes:0,hints:{},xp:0,secrets:[],settings:{sound:false,autoBrush:true,keyPrev:'q',keyNext:'e',hotkeysEnabled:true,rightClickCycle:true},welcomeSeen:false};}
+function graphicsLevel(){return state?.settings?.graphics||'enhanced';}
+function motionEnabled(){return state?.settings?.motion!==false && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
+function graphicsScale(){return graphicsLevel()==='low'?0:graphicsLevel()==='standard'?1:2;}
+
+function blankState(){return {version:1,player:{x:5,y:9},done:[],paint:{},mistakes:0,hints:{},xp:0,secrets:[],settings:{sound:false,autoBrush:true,keyPrev:'q',keyNext:'e',hotkeysEnabled:true,rightClickCycle:true,graphics:'enhanced',motion:true},welcomeSeen:false};}
 function load(){let s=blankState();try{const raw=JSON.parse(localStorage.getItem(STORAGE)||'null');if(raw&&raw.version===1){s={...s,...raw,player:{...s.player,...raw.player},settings:{...s.settings,...raw.settings}};s.done=Array.isArray(s.done)?s.done.filter(id=>!!qById(id)):[];s.paint=s.paint&&typeof s.paint==='object'?s.paint:{};s.hints=s.hints&&typeof s.hints==='object'?s.hints:{};s.secrets=Array.isArray(s.secrets)?s.secrets:[];s.xp=Math.max(0,Number(s.xp)||0);s.mistakes=Math.max(0,Number(s.mistakes)||0);s.player.x=clamp(Math.round(s.player.x)||5,1,W-2);s.player.y=clamp(Math.round(s.player.y)||9,1,H-2);}}catch(e){/* corrupt save is ignored */}return s;}
 function save(){try{localStorage.setItem(STORAGE,JSON.stringify(state));}catch(e){/* private mode may disable saving */}}
 const cellCache=new Map(),allowedCellCache=new Map();
@@ -175,6 +179,18 @@ function drawTile(x,y,t){const px=x*t,py=y*t;
   else if(sky){drawPixel(px+9,py+7,15,15,'#8bb5cd');drawPixel(px+13,py+2,9,8,'#d4eafa');}
   else if(canyon){drawPixel(px+11,py+11,18,20,'#74536c');drawPixel(px+14,py+3,12,12,'#b48994');}
   else{drawPixel(px+10,py+14,14,16,'#36513e');drawPixel(px+6,py+4,22,16,bright>.5?'#408966':'#557767');drawPixel(px+11,py+1,12,6,bright>.5?'#65a874':'#718e7b');}}
+
+const gfx=graphicsLevel();
+if(gfx!=='low'){
+  ctx.fillStyle='rgba(255,255,255,.04)';ctx.fillRect(px,py,1,t);ctx.fillRect(px,py,t,1);
+  ctx.fillStyle='rgba(0,0,0,.08)';ctx.fillRect(px+t-1,py,1,t);ctx.fillRect(px,py+t-1,t,1);
+  if(!path && y<19){
+    const s=seed(x,y,12);
+    if(s>.84){ctx.fillStyle=celestial?'#ffe3b3':prism?'#effcff':ember?'#f4ad72':marsh?'#b7efc4':sky?'#f3ead0':canyon?'#73e7d9':'#87c58d';ctx.fillRect(px+6+Math.floor(seed(x,y,17)*18),py+6+Math.floor(seed(x,y,18)*18),2,2);}
+    if(gfx==='enhanced' && s>.68 && !celestial && !prism && !ember){ctx.fillStyle='rgba(255,255,255,.05)';ctx.fillRect(px+3,py+20,10,1);}
+  }
+}
+
  if(x>=19&&x<32&&!complete(qById('bridge')))drawPixel(px,py,t,t,'rgba(15,33,59,.36)');
  if(x>=34&&x<47&&!complete(qById('festival')))drawPixel(px,py,t,t,'rgba(15,17,39,.48)');
  if(x>=49&&x<66&&!complete(qById('skybridge')))drawPixel(px,py,t,t,'rgba(13,19,46,.55)');
@@ -196,6 +212,7 @@ function drawMap(time){const dpr=Number(canvas.dataset.dpr)||1;const width=canva
  if(showMapCoords){ctx.strokeStyle='rgba(249,223,162,.20)';ctx.lineWidth=1;ctx.font='bold 8px Consolas,monospace';ctx.textAlign='left';ctx.textBaseline='top';for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++){ctx.strokeRect(x*t,y*t,t,t);ctx.fillStyle='rgba(235,248,220,.72)';ctx.fillText(`${x+1},${H-y}`,x*t+2,y*t+2);}}
  for(const secret of secrets){if(state.secrets.includes(key(secret.x,secret.y)))continue;if(isRiver(secret.x))continue;const cx=(secret.x+.5)*t,cy=(secret.y+.5)*t;ctx.fillStyle='#ffe0a0';ctx.font=`${13+Math.sin(time/290+secret.x)*2}px Georgia`;ctx.textAlign='center';ctx.fillText('✦',cx,cy+6);}
  for(const q of quests){if(q.x<left-1||q.x>right+1||q.y<top-1||q.y>bottom+1)continue;const done=complete(q),locked=!unlocked(q),px=q.x*t+t/2,py=q.y*t+t/2;const pulse=(1+Math.sin(time/380+q.x)*.25);
+ drawQuestHalo(q,t,time);
  if(!done&&!locked){ctx.fillStyle='rgba(255,217,142,.13)';ctx.beginPath();ctx.arc(px,py,16*pulse,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffdf88';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,15*pulse,0,Math.PI*2);ctx.stroke();}
  drawArtOnMap(q,q.x,q.y,t,done);
  if(!done&&!locked){drawPixel(px+10,py-17,6,8,'#ffe29a');drawPixel(px+11,py-21,4,4,'#fff5d8');}
@@ -206,7 +223,9 @@ function drawMap(time){const dpr=Number(canvas.dataset.dpr)||1;const width=canva
  ctx.fillStyle='rgba(6,30,38,.4)';ctx.beginPath();ctx.ellipse(px,py+13,14,5,0,0,Math.PI*2);ctx.fill();
  drawPixel(px-9,py-8,18,18,'#143e55');drawPixel(px-7,py-5,14,13,'#59bdd0');drawPixel(px-8,py-14,16,11,'#f8cea1');drawPixel(px-10,py-17,20,7,'#583f4d');drawPixel(px-3,py-19,6,5,'#f5d37a');drawPixel(px-5,py-9,3,3,'#183448');drawPixel(px+4,py-9,3,3,'#183448');drawPixel(px-8,py+8,6,6,'#2a314a');drawPixel(px+3,py+8,6,6,'#2a314a');
  if(route.length){ctx.strokeStyle='rgba(255,242,160,.7)';ctx.lineWidth=2;ctx.setLineDash([3,5]);ctx.beginPath();ctx.moveTo(px,py);for(const p of route)ctx.lineTo((p.x+.5)*t,(p.y+.5)*t);ctx.stroke();ctx.setLineDash([]);}
+ drawCompanion(time,t);
  ctx.restore();
+ drawAmbientEffects(time,left,right,top,bottom,t);
  // Edge vignette
  const grad=ctx.createRadialGradient(width/2,height/2,width*.18,width/2,height/2,width*.75);grad.addColorStop(0,'rgba(4,22,44,0)');grad.addColorStop(1,'rgba(5,17,31,.26)');ctx.fillStyle=grad;ctx.fillRect(0,0,width,height);
  requestAnimationFrame(drawMap);
@@ -219,6 +238,54 @@ else if(type==='prism'){drawPixel(px-12,py+18,70,22,'#668ea6');drawPixel(px+7,py
 else if(type==='celestial'){drawPixel(px-10,py+17,69,18,'#615278');drawPixel(px+7,py-11,43,31,'#9278b1');drawPixel(px+21,py-26,12,17,'#f4d2df');}
 else if(type==='ember'){drawPixel(px-12,py+21,77,20,'#773c48');drawPixel(px+1,py-4,51,29,'#a35b58');drawPixel(px+16,py-23,22,27,'#ce7a61');drawPixel(px+23,py-32,8,11,'#ffbd68');}
 else{drawPixel(px-13,py+22,75,8,'#7eabc0');drawPixel(px,py+6,49,24,'#a7bac2');drawPixel(px+10,py-20,28,27,'#c6c9c9');drawPixel(px+19,py-33,11,14,'#f4d1a0');}}
+
+function drawAmbientEffects(time,left,right,top,bottom,t){
+ const g=graphicsScale(); if(!g) return;
+ const motion=motionEnabled();
+ const density=g===2?16:9;
+ ctx.save();
+ for(let i=0;i<density;i++){
+   const nx=((i*23.17 + (motion?time/9000:0))%1), ny=((i*41.73 + (motion?time/11000:0))%1);
+   const wx=cam.x+nx*cam.w, wy=cam.y+ny*cam.h;
+   const tx=Math.floor(wx/t), ty=Math.floor(wy/t);
+   if(tx<left||tx>right||ty<top||ty>bottom) continue;
+   let color='rgba(255,243,171,.24)', size=2;
+   if(ty>=19){ color='rgba(255,233,163,.18)'; size=2+(i%2); }
+   else if(tx>=137){ color='rgba(247,205,255,.25)'; size=2.5; }
+   else if(tx>=111){ color='rgba(219,247,255,.23)'; size=2.2; }
+   else if(tx>=87){ color='rgba(255,152,103,.19)'; size=2.2; }
+   else if(tx>=68){ color='rgba(186,244,203,.18)'; size=1.8; }
+   else if(tx>=49){ color='rgba(221,242,255,.18)'; size=2; }
+   else if(tx>=34){ color='rgba(123,241,224,.18)'; size=2; }
+   const drift=motion?Math.sin(time/600+i)*3:0;
+   ctx.fillStyle=color;
+   ctx.beginPath();ctx.arc(wx-cam.x+drift,wy-cam.y,size,0,Math.PI*2);ctx.fill();
+ }
+ ctx.restore();
+}
+function drawQuestHalo(q,t,time){
+ if(graphicsLevel()==='low') return;
+ const px=q.x*t+t/2-cam.x, py=q.y*t+t/2-cam.y;
+ const done=complete(q), open=unlocked(q)&&!done;
+ const pulse=motionEnabled()? (1+Math.sin(time/260+q.x)*0.12) : 1;
+ if(done){
+   const r=(graphicsLevel()==='enhanced'?26:21)*pulse;
+   const grad=ctx.createRadialGradient(px,py,5,px,py,r);
+   grad.addColorStop(0,'rgba(255,243,168,.32)'); grad.addColorStop(1,'rgba(255,243,168,0)');
+   ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill();
+ } else if(open){
+   ctx.strokeStyle='rgba(255,223,134,.78)'; ctx.lineWidth=graphicsLevel()==='enhanced'?2.2:1.6; ctx.beginPath(); ctx.arc(px,py,(graphicsLevel()==='enhanced'?18:15)*pulse,0,Math.PI*2); ctx.stroke();
+ }
+}
+function drawCompanion(time,t){
+ if(graphicsLevel()==='low') return;
+ const motion=motionEnabled();
+ const px=state.player.x*t+t/2-cam.x-18, py=state.player.y*t+t/2-cam.y-10+(motion?Math.sin(time/240+1.1)*2:0);
+ ctx.fillStyle='rgba(6,30,38,.28)';ctx.beginPath();ctx.ellipse(px,py+11,9,3,0,0,Math.PI*2);ctx.fill();
+ drawPixel(px-7,py-2,14,12,'#ea9f65'); drawPixel(px-9,py-4,5,6,'#f6c394'); drawPixel(px+4,py-4,5,6,'#f6c394');
+ drawPixel(px-3,py-1,6,5,'#fff4e3'); drawPixel(px-3,py+5,6,3,'#8d4d33'); drawPixel(px-4,py+1,2,2,'#1e2630'); drawPixel(px+2,py+1,2,2,'#1e2630');
+ if(graphicsLevel()==='enhanced'){ ctx.fillStyle='rgba(255,234,154,.65)'; ctx.font='12px Georgia'; ctx.fillText('✦',px+12,py-2); }
+}
 function canvasClick(e){if(!questModal.hidden||!infoModal.hidden)return;const rect=canvas.getBoundingClientRect();const px=(e.clientX-rect.left)+cam.x,py=(e.clientY-rect.top)+cam.y;const x=Math.floor(px/cam.tile),y=Math.floor(py/cam.tile);if(x>=0&&y>=0&&x<W&&y<H)walkClick(x,y);}
 
 // ---------- Coordinate painting ----------
@@ -340,16 +407,23 @@ function openGallery(selected=null){let html=`<p>Every landmark you restore appe
  for(const q of quests){drawGalleryArt($(`gallery-${q.id}`),q,false);}for(const b of $('infoContent').querySelectorAll('[data-gallery-quest]'))b.addEventListener('click',()=>{const id=b.dataset.galleryQuest;closeInfo();startTravel(qById(id));});
  if(selected){const item=$(`gallery-${selected}`);if(item)item.scrollIntoView({block:'nearest'});}
 }
+
 function openSettings(){showInfo('PREFERENCES','Adventure Settings',`
  <div class="setting-row"><label for="soundSelect">Audio feedback</label><select id="soundSelect"><option value="off">Off</option><option value="on">On (gentle sound effects)</option></select></div>
  <div class="setting-row"><label for="coordsSelect">Show world-map coordinates</label><select id="coordsSelect"><option value="off">Off</option><option value="on">On</option></select></div>
+ <div class="setting-row"><label for="graphicsSelect">Graphics quality</label><select id="graphicsSelect"><option value="low">Low</option><option value="standard">Standard</option><option value="enhanced">Enhanced</option></select></div>
+ <div class="setting-row"><label for="motionSelect">World animation & ambience</label><select id="motionSelect"><option value="on">On</option><option value="off">Off</option></select></div>
+ <div class="graphics-note"><strong>Living World tip:</strong> Enhanced adds richer terrain texture, animated ambient effects, stronger landmark glow, and a visible Pip companion. If a device feels slow, switch to Standard or Low.</div>
  <p class="mini-note">Your adventure, XP, restored artwork, and achievements save automatically in this browser. Switching devices or clearing browser storage can remove saved progress.</p>
  <div class="setting-row"><div><strong>Start a completely new adventure</strong><br><small>Erase this browser's saved valley, artwork and XP.</small></div><button id="eraseSave" class="danger-btn" type="button">Reset progress</button></div>`);
- $('soundSelect').value=state.settings.sound?'on':'off';$('coordsSelect').value=showMapCoords?'on':'off';
+ $('soundSelect').value=state.settings.sound?'on':'off';$('coordsSelect').value=showMapCoords?'on':'off';$('graphicsSelect').value=graphicsLevel();$('motionSelect').value=motionEnabled()?'on':'off';
  $('soundSelect').addEventListener('change',e=>{state.settings.sound=e.target.value==='on';save();playTone();});
  $('coordsSelect').addEventListener('change',e=>{showMapCoords=e.target.value==='on';$('btnCoords').textContent=`# Map grid: ${showMapCoords?'on':'off'}`;$('btnCoords').setAttribute('aria-pressed',String(showMapCoords));});
+ $('graphicsSelect').addEventListener('change',e=>{state.settings.graphics=e.target.value;save();toast(`Graphics quality: ${e.target.value}.`);});
+ $('motionSelect').addEventListener('change',e=>{state.settings.motion=e.target.value==='on';save();toast(`World animation ${state.settings.motion?'enabled':'disabled'}.`);});
  $('eraseSave').addEventListener('click',()=>{if(window.confirm('Erase all your saved Coordinate Pixel Quest progress on this browser? This cannot be undone.')){state=blankState();route=[];pendingQuest=null;save();closeInfo();updateUI();toast('New adventure started. Your valley is ready!');}});
 }
+
 function handleKeyboard(e){
  if(!infoModal.hidden){if(e.key==='Escape')closeInfo();return;}
  if(!questModal.hidden){
