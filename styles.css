@@ -87,3 +87,15 @@ body{background:radial-gradient(circle at 20% 10%,#274d6b 0%,#10223a 34%,#081525
 .setting-row select{min-width:200px}
 .graphics-note{margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid #52728d;background:#17354d;color:#d2ebea;font-size:11px;line-height:1.45}
 @media(max-width:570px){.setting-row{align-items:flex-start;flex-direction:column}.setting-row select{width:100%}}
+
+/* v5.1 visible release markers */
+.release-pill{display:inline-block;vertical-align:baseline;margin-right:5px;padding:3px 8px;border-radius:999px;font-size:10px;letter-spacing:.8px;color:#172c3c;background:linear-gradient(130deg,#fff0b8,#e7b66b);border:1px solid #fff1c6;box-shadow:0 0 15px #edce8344}
+.map-ribbon{background:linear-gradient(100deg,#fff2bb,#dfb46b);color:#1a344b;border:1px solid #fff1b6;box-shadow:0 6px 18px #08122288}
+.map-frame{border-color:#d2b984}
+@media(max-width:570px){.release-pill{display:inline-block;font-size:9px;margin:0 2px 3px 0}}
+
+/* v5.2 genuinely tile-rendered pixel art */
+#worldCanvas{image-rendering:pixelated;background:#37695b}
+.map-frame{border-color:#f0d395;box-shadow:0 0 0 3px #5f6b61,0 17px 37px rgba(0,0,0,.32),inset 0 0 0 2px #ffe7b7}
+.map-ribbon{background:linear-gradient(115deg,#192c49,#2c5261);border-color:#f2cf8c;letter-spacing:1.5px}
+.release-pill{background:linear-gradient(130deg,#386f62,#234666);border-color:#d8ca8c;color:#fff2c6}

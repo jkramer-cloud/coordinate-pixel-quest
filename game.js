@@ -121,7 +121,7 @@ function passable(x,y){if(!valid(x,y))return false;
 function neighborTiles(x,y){return [[x,y-1],[x+1,y],[x,y+1],[x-1,y]].filter(([a,b])=>passable(a,b));}
 function bfs(start,goal){const begin=key(start.x,start.y),dest=key(goal.x,goal.y);if(begin===dest)return [];if(!passable(goal.x,goal.y))return null;const parent=new Map([[begin,null]]),queue=[[start.x,start.y]];for(let i=0;i<queue.length;i++){const [x,y]=queue[i];for(const [nx,ny] of neighborTiles(x,y)){const k=key(nx,ny);if(parent.has(k))continue;parent.set(k,key(x,y));if(k===dest){const path=[];let curr=k;while(curr!==begin){const [px,py]=curr.split(',').map(Number);path.push({x:px,y:py});curr=parent.get(curr);}return path.reverse();}queue.push([nx,ny]);}}return null;}
 function findPathTo(q){const candidates=[[q.x,q.y],...neighborTiles(q.x,q.y)].filter(([x,y])=>passable(x,y));let best=null;for(const [x,y] of candidates){const p=bfs(state.player,{x,y});if(p&&(!best||p.length<best.length))best=p;}return best;}
-function tryMove(dx,dy){route=[];pendingQuest=null;const nx=state.player.x+dx,ny=state.player.y+dy;if(!passable(nx,ny)){toast(isRiver(nx)?'The river is blocked. Restore the Golden Bridge first!':isCanyonGate(nx)?'Crystal Canyon opens after the Festival of Stars!':isSkyGate(nx)?'Restore the Sky Lift to enter the Sky Isles!':isMarshGate(nx)?'Restore the Dawn Phoenix to enter Moonveil Marsh!':isEmberGate(nx)?'Restore the Moonstone Causeway to reach Ember Peaks!':isPrismGate(nx)?'Restore the Sunspire to reach Prism Tundra!':isCelestialGate(nx)?'Restore the Prismatic Crossing to enter Celestial Gardens!':ny>=19?'Side trail closed. Finish the earlier main chapter, or use its entrance!':'That tile is outside the path.');return;}moveTo(nx,ny);}
+function tryMove(dx,dy){route=[];pendingQuest=null;const nx=state.player.x+dx,ny=state.player.y+dy;moveDirection=dy>0?0:dy<0?3:dx<0?1:2;if(!passable(nx,ny)){toast(isRiver(nx)?'The river is blocked. Restore the Golden Bridge first!':isCanyonGate(nx)?'Crystal Canyon opens after the Festival of Stars!':isSkyGate(nx)?'Restore the Sky Lift to enter the Sky Isles!':isMarshGate(nx)?'Restore the Dawn Phoenix to enter Moonveil Marsh!':isEmberGate(nx)?'Restore the Moonstone Causeway to reach Ember Peaks!':isPrismGate(nx)?'Restore the Sunspire to reach Prism Tundra!':isCelestialGate(nx)?'Restore the Prismatic Crossing to enter Celestial Gardens!':ny>=19?'Side trail closed. Finish the earlier main chapter, or use its entrance!':'That tile is outside the path.');return;}moveTo(nx,ny);}
 function moveTo(x,y,quiet=false){state.player.x=x;state.player.y=y;save();const secret=secrets.find(s=>s.x===x&&s.y===y);if(secret&&!state.secrets.includes(key(x,y))){state.secrets.push(key(x,y));state.xp+=20;toast('Secret star discovered! +20 XP ✦');playTone('ok');save();}if(!quiet)updateUI();}
 function startTravel(q){if(complete(q)){openGallery(q.id);return;}if(!unlocked(q)){toast(`Locked! First restore: ${q.need.filter(n=>!state.done.includes(n)).map(n=>qById(n).title).join(', ')}`);return;}
  const p=findPathTo(q);if(!p){toast('That landmark is beyond a locked crossing. Restore the earlier chapter first.');return;}route=p;pendingQuest=q.id;
@@ -131,13 +131,145 @@ function startTravel(q){if(complete(q)){openGallery(q.id);return;}if(!unlocked(q
 function walkClick(x,y){let q=quests.find(q=>Math.abs(q.x-x)<=1&&Math.abs(q.y-y)<=1);if(q){startTravel(q);return;}
  const path=bfs(state.player,{x,y});if(path){route=path;pendingQuest=null;if(!path.length)toast('You are already here.');}else toast('That region is still sealed. Finish the current chapter to open its crossing.');
 }
-function tickRoute(){if(!route.length)return;const fast=route.length>20?3:route.length>8?2:1;for(let i=0;i<fast&&route.length;i++){const step=route.shift();if(!passable(step.x,step.y)){route=[];pendingQuest=null;updateUI();return;}moveTo(step.x,step.y,true);}updateUI();if(!route.length&&pendingQuest){const id=pendingQuest;pendingQuest=null;openQuest(id);}}
+function tickRoute(){if(!route.length)return;const look=route[0];moveDirection=look.y>state.player.y?0:look.y<state.player.y?3:look.x<state.player.x?1:2;const fast=route.length>20?3:route.length>8?2:1;for(let i=0;i<fast&&route.length;i++){const step=route.shift();if(!passable(step.x,step.y)){route=[];pendingQuest=null;updateUI();return;}moveTo(step.x,step.y,true);}updateUI();if(!route.length&&pendingQuest){const id=pendingQuest;pendingQuest=null;openQuest(id);}}
 function nearQuest(){return quests.find(q=>unlocked(q)&&!complete(q)&&Math.abs(q.x-state.player.x)+Math.abs(q.y-state.player.y)<=1);}
 function interact(){const q=nearQuest();if(q)openQuest(q.id);else toast('Move next to a shining landmark—or select it from the quest log.');}
 const cell=34;
 function fitCanvas(){const box=canvas.getBoundingClientRect();const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(box.width*dpr);canvas.height=Math.round(box.height*dpr);canvas.dataset.dpr=dpr;}
 function drawPixel(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
-function drawTile(x,y,t){const px=x*t,py=y*t;
+
+function drawEnvironmentDetails(x,y,t,bright,biome,path){
+  const level=graphicsScale();if(level===0||path)return;
+  const v=seed(x,y,55),px=x*t,py=y*t;
+  if(v<.72)return;
+  const lush=bright>.42;
+  if(biome==='meadow'){
+    if(v>.94){ // miniature tree canopy and underbrush
+      drawPixel(px+13,py+15,7,13,lush?'#5c453c':'#425051');
+      drawPixel(px+7,py+8,19,11,lush?'#2c8753':'#4b6561');
+      drawPixel(px+11,py+2,12,10,lush?'#65b76a':'#607c71');
+      drawPixel(px+5,py+17,9,5,lush?'#3d9b5f':'#506b65');
+      if(level===2)drawPixel(px+17,py+4,4,3,lush?'#b6de7c':'#78917a');
+    }else{
+      drawPixel(px+9,py+13,2,9,lush?'#70b26f':'#6b837e');
+      drawPixel(px+13,py+11,2,8,lush?'#8acb79':'#809487');
+      drawPixel(px+7,py+11,6,3,lush?'#eaca7d':'#8c9589');
+      if(level===2){drawPixel(px+20,py+23,3,3,lush?'#efa0ab':'#788f91');drawPixel(px+23,py+24,3,3,lush?'#f9da87':'#859389');}
+    }
+  }else if(biome==='canyon'){
+    drawPixel(px+6,py+19,24,8,lush?'#8e5a66':'#5d5868');drawPixel(px+11,py+12,15,10,lush?'#bd8578':'#756470');
+    drawPixel(px+16,py+3,7,14,lush?'#61e5d8':'#638b96');drawPixel(px+19,py+1,3,6,'#d4f9e9');
+  }else if(biome==='sky'){
+    drawPixel(px+5,py+17,23,8,lush?'#e4f4ec':'#7c98af');drawPixel(px+9,py+13,12,5,lush?'#ffffff':'#a0b1bb');
+    if(level===2)drawPixel(px+12,py+24,9,6,lush?'#8cd9c8':'#7795a6');
+  }else if(biome==='marsh'){
+    drawPixel(px+8,py+12,3,16,lush?'#51ba8f':'#587b81');drawPixel(px+14,py+9,3,20,lush?'#4bb080':'#55797a');
+    drawPixel(px+5,py+9,12,7,lush?'#93d89e':'#78948e');
+    if(level===2)drawPixel(px+24,py+6,4,4,lush?'#ffdc99':'#98a9a0');
+  }else if(biome==='ember'){
+    drawPixel(px+3,py+18,27,9,lush?'#6d3946':'#503942');drawPixel(px+10,py+13,15,6,'#b87067');
+    drawPixel(px+19,py+15,3,14,lush?'#ff9f4c':'#a96656');drawPixel(px+21,py+12,4,7,lush?'#ffdb79':'#bd846d');
+  }else if(biome==='prism'){
+    drawPixel(px+7,py+18,23,10,lush?'#bbdef3':'#7e9ab2');drawPixel(px+14,py+6,11,15,lush?'#e6ffff':'#a1bdcd');
+    drawPixel(px+17,py+3,5,7,lush?'#a5edfc':'#b1c5d3');
+  }else if(biome==='celestial'){
+    drawPixel(px+6,py+19,23,8,lush?'#9d7cc0':'#736588');drawPixel(px+11,py+11,13,12,lush?'#e3b9ee':'#a38bb2');
+    drawPixel(px+14,py+4,7,9,'#ffe6ba');
+  }
+}
+
+
+// v5.2: hand-crafted native-resolution pixel-art atlas; every biome is rendered
+// from artwork instead of a flat-color square. No external dependencies.
+const PIXEL_ART={};
+for(const [id,filename] of Object.entries({terrain:'terrain-atlas.png',decor:'decorations-atlas.png',structures:'structures-atlas.png',explorer:'explorer-sprites.png',pip:'pip-sprites.png'})){
+ const img=new Image();img.src=filename+'?v=5.2.0';PIXEL_ART[id]=img;
+}
+function pixelReady(){return Object.values(PIXEL_ART).every(img=>img.complete&&img.naturalWidth>0);}
+const biomeMap={meadow:0,wilds:1,canyon:2,sky:3,marsh:4,ember:5,prism:6,celestial:7,sunflower:8,tidepool:9,clockwork:10,mushroom:11,frostfire:12};
+function biomeAt(x,y){
+ if(y>=19){const z=sideAt(x,y);if(!z)return -1;
+  return ({'Sunflower Glade':8,'Tidepool Cove':9,'Clockwork Camp':10,'Mushroom Hollow':11,'Frostfire Grotto':12})[z.name]??0;
+ }
+ if(x>=137)return 7;if(x>=111)return 6;if(x>=87)return 5;
+ if(x>=68)return 4;if(x>=49)return 3;if(x>=34)return 2;
+ return x>=19?1:0;
+}
+function roadAt(x,y){return (y===9&&x>=5&&x<=163)||(x===7&&y>=7&&y<=10)||(x===11&&y>=4&&y<=9)||(x===9&&y>=9&&y<=14)||(x===22&&y>=7&&y<=15)||(x===25&&y>=4&&y<=13)||(x===37&&y>=5&&y<=9)||(x===40&&y>=9&&y<=14)||(x===44&&y>=4&&y<=15)||(x===53&&y>=5&&y<=9)||(x===59&&y>=9&&y<=14)||(x===70&&y>=5&&y<=9)||(x===73&&y>=9&&y<=14)||(x===77&&y>=5&&y<=9)||(x===80&&y>=9&&y<=14)||(x===90&&y>=5&&y<=9)||(x===93&&y>=9&&y<=14)||(x===97&&y>=5&&y<=9)||(x===101&&y>=9&&y<=14)||(x===114&&y>=5&&y<=9)||(x===120&&y>=9&&y<=14)||(x===126&&y>=5&&y<=9)||(x===130&&y>=9&&y<=14)||(x===141&&y>=5&&y<=9)||(x===146&&y>=9&&y<=14)||(x===152&&y>=5&&y<=9)||(x===158&&y>=9&&y<=14);
+}
+function isGate(x){return isRiver(x)||isCanyonGate(x)||isSkyGate(x)||isMarshGate(x)||isEmberGate(x)||isPrismGate(x)||isCelestialGate(x);}
+function pixelTile(x,y,t){
+ const px=x*t,py=y*t,biome=biomeAt(x,y),rng=seed(x,y,14);
+ if(biome<0){ctx.fillStyle='#162939';ctx.fillRect(px,py,t,t);return;}
+ const gate=isGate(x),side=y>=19;
+ const z=side?sideAt(x,y):null;
+ let tileKind=rng>.67?2:rng>.29?1:0;
+ const road=side? !!z&&(x===z.entry||y===27):roadAt(x,y);
+ if(road)tileKind=seed(x,y,15)>.5?3:4;
+ if(gate){tileKind=motionEnabled()&&Math.floor(Date.now()/650)%2?6:5;}
+ ctx.drawImage(PIXEL_ART.terrain,tileKind*32,biome*32,32,32,px,py,t,t);
+ if(gate){
+   const open=y===9&&(isRiver(x)?complete(qById('bridge')):isCanyonGate(x)?complete(qById('festival')):isSkyGate(x)?complete(qById('skybridge')):isMarshGate(x)?complete(qById('phoenix')):isEmberGate(x)?complete(qById('moongate')):isPrismGate(x)?complete(qById('sunspire')):complete(qById('prismgate')));
+   if(open){
+     ctx.fillStyle='#695039';ctx.fillRect(px,py+7,t,t-14);
+     ctx.fillStyle='#d3a66f';ctx.fillRect(px,py+9,t,t-18);
+     ctx.fillStyle='#f8d79e';ctx.fillRect(px,py+10,t,3);
+     ctx.fillStyle='#7a5c44';for(let i=0;i<3;i++)ctx.fillRect(px+(i*t/3)|0,py+9,2,t-18);
+     ctx.fillStyle='#5b463c';ctx.fillRect(px,py+21,t,2);
+   }
+ }
+ if(side&&z&&y===19){
+   ctx.fillStyle='#f3d093';ctx.fillRect(px,py,t,5);
+   if(x!==z.entry){ctx.fillStyle='#314b5d';ctx.fillRect(px,py+5,t,t-5);}
+ }
+ // Fog persists until chapters are restored, but the underlying artwork stays recognizable.
+ let fog=0;
+ if(side&&!sideAllowed(z))fog=.68;
+ else if(x>=137&&!complete(qById('prismgate')))fog=.42;
+ else if(x>=111&&!complete(qById('sunspire')))fog=.39;
+ else if(x>=87&&!complete(qById('moongate')))fog=.37;
+ else if(x>=68&&!complete(qById('phoenix')))fog=.35;
+ else if(x>=49&&!complete(qById('skybridge')))fog=.34;
+ else if(x>=34&&!complete(qById('festival')))fog=.31;
+ else if(x>=19&&x<32&&!complete(qById('bridge')))fog=.18;
+ if(fog){ctx.fillStyle=`rgba(9,17,35,${fog})`;ctx.fillRect(px,py,t,t);}
+}
+function drawPixelDecor(x,y,t){
+ const biome=biomeAt(x,y);if(biome<0||isGate(x)||roadAt(x,y))return;
+ const z=y>=19?sideAt(x,y):null;
+ if(y>=19&&(!sideAllowed(z)||x===z.entry||y===27))return;
+ const v=seed(x,y,22);
+ const edge=y===1||y===17||y===33||x===2||x===165;
+ const chance=edge?.66:(graphicsLevel()==='enhanced'?.117:.068);
+ if(v<1-chance)return;
+ if(quests.some(q=>Math.abs(q.x-x)<=1&&Math.abs(q.y-y)<=1))return;
+ if(Math.abs(state.player.x-x)<2&&Math.abs(state.player.y-y)<2)return;
+ const which=Math.floor(seed(x,y,25)*3);
+ const w=t*1.40,h=t*1.63;
+ ctx.drawImage(PIXEL_ART.decor,which*48,biome*56,48,56,x*t+(t-w)/2,y*t+t-h,w,h);
+}
+function drawPixelStructure(x,y,t,type){
+ const idx=({village:0,tower:1,canyon:2,sky:3,marsh:4,ember:5,prism:6,celestial:7})[type]||0;
+ const w=t*2.30,h=t*2.1;
+ ctx.drawImage(PIXEL_ART.structures,idx*88,0,88,80,x*t+(t-w)/2,y*t+t-h,w,h);
+}
+function drawPixelHero(time,t,px,py){
+ const moving=route.length>0;
+ const frame=moving&&motionEnabled()?Math.floor(time/175)%3:1;
+ const dir=moveDirection||0;
+ const w=t*.92,h=t*1.22;
+ ctx.fillStyle='rgba(13,28,38,.39)';ctx.beginPath();ctx.ellipse(px,py+t*.36,t*.42,4,0,0,Math.PI*2);ctx.fill();
+ ctx.drawImage(PIXEL_ART.explorer,frame*24,dir*32,24,32,px-w/2,py-h*.71,w,h);
+}
+function drawPixelPip(time,t){
+ const x=state.player.x*t+t/2-t*.76;
+ const y=state.player.y*t+t/2+t*.22+(motionEnabled()?Math.sin(time/220)*1.6:0);
+ const sz=t*.68,frame=motionEnabled()?Math.floor(time/400)%2:0;
+ ctx.drawImage(PIXEL_ART.pip,frame*24,0,24,24,x-sz/2,y-sz/2,sz,sz);
+}
+let moveDirection=0;
+
+function drawTile(x,y,t){if(graphicsLevel()!=='low'&&pixelReady()){pixelTile(x,y,t);return;}const px=x*t,py=y*t;
  if(y>=19){const z=sideAt(x,y);if(!z){drawPixel(px,py,t,t,seed(x,y)>.47?'#203548':'#253b4c');if(seed(x,y,4)>.76)drawPixel(px+8,py+9,18,13,'#385165');return;}
   const v=seed(x,y,4);drawPixel(px,py,t,t,v>.53?z.colors[0]:z.colors[1]);
   if(v>.58){drawPixel(px+4,py+8,8,4,'#d6bf8d');drawPixel(px+19,py+17,9,5,'#46667d');}
@@ -180,6 +312,8 @@ function drawTile(x,y,t){const px=x*t,py=y*t;
   else if(canyon){drawPixel(px+11,py+11,18,20,'#74536c');drawPixel(px+14,py+3,12,12,'#b48994');}
   else{drawPixel(px+10,py+14,14,16,'#36513e');drawPixel(px+6,py+4,22,16,bright>.5?'#408966':'#557767');drawPixel(px+11,py+1,12,6,bright>.5?'#65a874':'#718e7b');}}
 
+ const biome=celestial?'celestial':prism?'prism':ember?'ember':marsh?'marsh':sky?'sky':canyon?'canyon':'meadow';
+ drawEnvironmentDetails(x,y,t,bright,biome,path);
 const gfx=graphicsLevel();
 if(gfx!=='low'){
   ctx.fillStyle='rgba(255,255,255,.04)';ctx.fillRect(px,py,1,t);ctx.fillRect(px,py,t,1);
@@ -202,28 +336,29 @@ if(gfx!=='low'){
 function drawArtOnMap(q,x,y,t,done){const cx=x*t+t/2,cy=y*t+t/2;ctx.save();if(done){const scale=2.4;const n=q.pattern.length;const left=Math.round(cx-n*scale/2),top=Math.round(cy-n*scale/2);for(let row=0;row<n;row++)for(let col=0;col<n;col++){const code=q.pattern[row][col];if(code!=='.')drawPixel(left+col*scale,top+row*scale,scale+.2,scale+.2,palette[code].hex);}ctx.restore();return;}
  ctx.translate(cx,cy);const locked=!unlocked(q);drawPixel(-12,-10,24,23,locked?'#465870':'#2a6f80');drawPixel(-9,-8,18,18,locked?'#475b6d':'#7dc4c2');drawPixel(-7,-5,14,14,locked?'#647080':'#355977');
  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 19px Georgia,serif';ctx.fillStyle=locked?'#a2b1bd':'#f5d581';ctx.fillText(locked?'×':q.icon,0,-1);ctx.restore();}
-function drawMap(time){const dpr=Number(canvas.dataset.dpr)||1;const width=canvas.width/dpr,height=canvas.height/dpr;if(!width||!height)return;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,width,height);
+function drawMap(time){const dpr=Number(canvas.dataset.dpr)||1;const width=canvas.width/dpr,height=canvas.height/dpr;if(!width||!height)return;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,width,height);ctx.imageSmoothingEnabled=false;
  const t=cam.tile;cam.w=width;cam.h=height;cam.x=clamp(state.player.x*t-width/2,0,Math.max(0,W*t-width));cam.y=clamp(state.player.y*t-height/2,0,Math.max(0,H*t-height));
  ctx.save();ctx.translate(-cam.x,-cam.y);
  const left=clamp(Math.floor(cam.x/t)-1,0,W-1),right=clamp(Math.ceil((cam.x+width)/t)+1,0,W-1),top=clamp(Math.floor(cam.y/t)-1,0,H-1),bottom=clamp(Math.ceil((cam.y+height)/t)+1,0,H-1);
  for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)drawTile(x,y,t);
+ if(graphicsLevel()!=='low'&&pixelReady())for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)drawPixelDecor(x,y,t);
  // The far western village and eastern observatory are original pixel landmarks.
- drawStructure(3,11,t,'village');drawStructure(28,3,t,'tower');drawStructure(40,2,t,'canyon');drawStructure(57,3,t,'sky');drawStructure(75,2,t,'marsh');drawStructure(95,2,t,'ember');drawStructure(123,2,t,'prism');drawStructure(149,2,t,'celestial');
+ for(const [x,y,type] of [[3,11,'village'],[28,3,'tower'],[40,2,'canyon'],[57,3,'sky'],[75,2,'marsh'],[95,2,'ember'],[123,2,'prism'],[149,2,'celestial']]){if(graphicsLevel()!=='low'&&pixelReady())drawPixelStructure(x,y,t,type);else drawStructure(x,y,t,type);}
  if(showMapCoords){ctx.strokeStyle='rgba(249,223,162,.20)';ctx.lineWidth=1;ctx.font='bold 8px Consolas,monospace';ctx.textAlign='left';ctx.textBaseline='top';for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++){ctx.strokeRect(x*t,y*t,t,t);ctx.fillStyle='rgba(235,248,220,.72)';ctx.fillText(`${x+1},${H-y}`,x*t+2,y*t+2);}}
- for(const secret of secrets){if(state.secrets.includes(key(secret.x,secret.y)))continue;if(isRiver(secret.x))continue;const cx=(secret.x+.5)*t,cy=(secret.y+.5)*t;ctx.fillStyle='#ffe0a0';ctx.font=`${13+Math.sin(time/290+secret.x)*2}px Georgia`;ctx.textAlign='center';ctx.fillText('✦',cx,cy+6);}
- for(const q of quests){if(q.x<left-1||q.x>right+1||q.y<top-1||q.y>bottom+1)continue;const done=complete(q),locked=!unlocked(q),px=q.x*t+t/2,py=q.y*t+t/2;const pulse=(1+Math.sin(time/380+q.x)*.25);
+ for(const secret of secrets){if(state.secrets.includes(key(secret.x,secret.y)))continue;if(isRiver(secret.x))continue;const cx=(secret.x+.5)*t,cy=(secret.y+.5)*t;ctx.fillStyle='#ffe0a0';ctx.font=`${13+(motionEnabled()?Math.sin(time/290+secret.x)*2:0)}px Georgia`;ctx.textAlign='center';ctx.fillText('✦',cx,cy+6);}
+ for(const q of quests){if(q.x<left-1||q.x>right+1||q.y<top-1||q.y>bottom+1)continue;const done=complete(q),locked=!unlocked(q),px=q.x*t+t/2,py=q.y*t+t/2;const pulse=motionEnabled()?(1+Math.sin(time/380+q.x)*.25):1;
  drawQuestHalo(q,t,time);
  if(!done&&!locked){ctx.fillStyle='rgba(255,217,142,.13)';ctx.beginPath();ctx.arc(px,py,16*pulse,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffdf88';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,15*pulse,0,Math.PI*2);ctx.stroke();}
  drawArtOnMap(q,q.x,q.y,t,done);
  if(!done&&!locked){drawPixel(px+10,py-17,6,8,'#ffe29a');drawPixel(px+11,py-21,4,4,'#fff5d8');}
  if(done&&Math.sin(time/500+q.y)>.6){ctx.fillStyle='#fff1a2';ctx.font='11px Georgia';ctx.fillText('✦',px+13,py-17);}
  }
- // Player hero sprite.
- const px=state.player.x*t+t/2,py=state.player.y*t+t/2+Math.sin(time/210)*1.6;
- ctx.fillStyle='rgba(6,30,38,.4)';ctx.beginPath();ctx.ellipse(px,py+13,14,5,0,0,Math.PI*2);ctx.fill();
- drawPixel(px-9,py-8,18,18,'#143e55');drawPixel(px-7,py-5,14,13,'#59bdd0');drawPixel(px-8,py-14,16,11,'#f8cea1');drawPixel(px-10,py-17,20,7,'#583f4d');drawPixel(px-3,py-19,6,5,'#f5d37a');drawPixel(px-5,py-9,3,3,'#183448');drawPixel(px+4,py-9,3,3,'#183448');drawPixel(px-8,py+8,6,6,'#2a314a');drawPixel(px+3,py+8,6,6,'#2a314a');
+ // Player sprite with three-frame directional walking animations.
+ const px=state.player.x*t+t/2,py=state.player.y*t+t/2+(motionEnabled()?Math.sin(time/210)*1.6:0);
+ if(graphicsLevel()!=='low'&&pixelReady())drawPixelHero(time,t,px,py);
+ else{ctx.fillStyle='rgba(6,30,38,.4)';ctx.beginPath();ctx.ellipse(px,py+13,14,5,0,0,Math.PI*2);ctx.fill();drawPixel(px-9,py-8,18,18,'#143e55');drawPixel(px-7,py-5,14,13,'#59bdd0');drawPixel(px-8,py-14,16,11,'#f8cea1');drawPixel(px-10,py-17,20,7,'#583f4d');drawPixel(px-3,py-19,6,5,'#f5d37a');drawPixel(px-5,py-9,3,3,'#183448');drawPixel(px+4,py-9,3,3,'#183448');drawPixel(px-8,py+8,6,6,'#2a314a');drawPixel(px+3,py+8,6,6,'#2a314a');}
  if(route.length){ctx.strokeStyle='rgba(255,242,160,.7)';ctx.lineWidth=2;ctx.setLineDash([3,5]);ctx.beginPath();ctx.moveTo(px,py);for(const p of route)ctx.lineTo((p.x+.5)*t,(p.y+.5)*t);ctx.stroke();ctx.setLineDash([]);}
- drawCompanion(time,t);
+ if(graphicsLevel()!=='low'&&pixelReady())drawPixelPip(time,t);else drawCompanion(time,t);
  ctx.restore();
  drawAmbientEffects(time,left,right,top,bottom,t);
  // Edge vignette
@@ -265,7 +400,7 @@ function drawAmbientEffects(time,left,right,top,bottom,t){
 }
 function drawQuestHalo(q,t,time){
  if(graphicsLevel()==='low') return;
- const px=q.x*t+t/2-cam.x, py=q.y*t+t/2-cam.y;
+ const px=q.x*t+t/2, py=q.y*t+t/2;
  const done=complete(q), open=unlocked(q)&&!done;
  const pulse=motionEnabled()? (1+Math.sin(time/260+q.x)*0.12) : 1;
  if(done){
@@ -280,7 +415,7 @@ function drawQuestHalo(q,t,time){
 function drawCompanion(time,t){
  if(graphicsLevel()==='low') return;
  const motion=motionEnabled();
- const px=state.player.x*t+t/2-cam.x-18, py=state.player.y*t+t/2-cam.y-10+(motion?Math.sin(time/240+1.1)*2:0);
+ const px=state.player.x*t+t/2-18, py=state.player.y*t+t/2-10+(motion?Math.sin(time/240+1.1)*2:0);
  ctx.fillStyle='rgba(6,30,38,.28)';ctx.beginPath();ctx.ellipse(px,py+11,9,3,0,0,Math.PI*2);ctx.fill();
  drawPixel(px-7,py-2,14,12,'#ea9f65'); drawPixel(px-9,py-4,5,6,'#f6c394'); drawPixel(px+4,py-4,5,6,'#f6c394');
  drawPixel(px-3,py-1,6,5,'#fff4e3'); drawPixel(px-3,py+5,6,3,'#8d4d33'); drawPixel(px-4,py+1,2,2,'#1e2630'); drawPixel(px+2,py+1,2,2,'#1e2630');
