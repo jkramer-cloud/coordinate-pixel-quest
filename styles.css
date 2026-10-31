@@ -47,3 +47,10 @@
 .shortcut-check{display:flex;align-items:center;gap:8px;font-size:11px;margin:7px 0;color:#d7e7e6}.shortcut-check input{accent-color:#efce82;width:17px;height:17px}
 .shortcut-editor #shortcutMessage{line-height:1.45;min-height:18px}
 @media(max-width:570px){.color-wheel{width:154px;height:154px;flex-basis:154px}.wheel-swatch{width:25px;height:25px}.wheel-center{width:78px;height:78px}.wheel-center-dot{width:22px;height:22px}.wheel-center strong{font-size:9px}.wheel-layout{gap:9px}.wheel-actions{gap:5px}.shortcut-strip{font-size:9px}.palette-block{padding:9px}}
+
+/* v4: main continents and optional northern side trails */
+.region-progress{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.region-step{padding:8px 7px;line-height:1.2;font-size:10px}
+.region-step small{font-size:9px}
+@media(max-width:1100px){.region-progress{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:570px){.region-progress{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.region-step{font-size:9px;padding:7px 6px}}

@@ -1,19 +1,19 @@
-# Coordinate Pixel Quest — changelog
+# Coordinate Pixel Quest — Changelog
 
-## v3.1.0 — October 31, 2026
-- Circular color palette with color selection and central click-to-cycle button, plus previous/next controls and wheel scroll.
-- Right-click on paint grid or wheel to cycle; Shift + right-click cycles backward.
-- Configurable single-letter or digit keyboard shortcuts (defaults Q/E), with independently enabled keyboard/right-click options.
-- Stored preferences persist alongside existing game progress; manual selection overrides auto-brush on large canvases.
+## v4.0.0 — October 31, 2026
+- Added Prism Tundra (five 36×36 quests) after Sunspire.
+- Added Celestial Gardens (four 40×40 quests and 44×44 Heart of the Cosmos) after Prismatic Crossing.
+- Added five optional northern side areas with three shorter puzzle quests each: Sunflower Glade, Tidepool Cove, Clockwork Camp, Mushroom Hollow, and Frostfire Grotto.
+- Expanded to 50 restoration quests with twelve adventure map region trackers and fourteen achievements.
+- Expanded overworld eastward and northward, added new road and gate art, hidden stars, region scenery, and background structures.
+- Improved long-distance automatic travel to handle the enlarged map; optimized cached coordinate cells and restoration lighting updates.
+- Kept all 25 original quests, custom keyboard controls, color wheel, focus mode, automatic brush, and local saved progress format.
 
-## v3.0.0 — October 31, 2026
-- Added **Moonveil Marsh** after Dawn Phoenix: 5 quests, each 24×24.
-- Added **Ember Peaks** after Moonstone Causeway: 4 quests at 28×28 and final 32×32 Sunspire.
-- Expanded eastward map with two distinct biomes and two new gated crossings.
-- Increased progression to 25 restorations, 10 achievements and additional hidden stars.
-- Enabled focused 10×10 view by default for 24×24+ puzzles, with unchanged full-world coordinate labels.
-- Added optional automatic color brush for large puzzles; positional math remains required.
-- Retained save key and all original 15 quests, their IDs, pattern data, and rewards.
+## v3.1.0
+- Custom hotkeys, color wheel, and right-click brush cycling.
+
+## v3.0.0
+- Moonveil Marsh and Ember Peaks with 24×24 to 32×32 restorations.
 
 ## v2.0.0
-- Crystal Canyon (16×16) and Sky Isles (20×20) expansions.
+- Crystal Canyon and Sky Isles expansions.
