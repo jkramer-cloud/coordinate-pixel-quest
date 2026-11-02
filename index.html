@@ -7,7 +7,7 @@
   <meta name="description" content="Restore a magical pixel world by plotting coordinates. A free, browser-based coordinate adventure for students.">
   <title>Coordinate Pixel Quest — Restore Pixel Valley</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=5.2.0">
+  <link rel="stylesheet" href="styles.css?v=5.3.0">
 </head>
 <body>
   <div class="stars" aria-hidden="true"></div>
@@ -15,7 +15,7 @@
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true"><span>✣</span></div>
-        <div><div class="brand-kicker">NACHES LEARNING HUB • AN ORIGINAL ADVENTURE</div><h1>COORDINATE <span>PIXEL QUEST</span></h1><div class="brand-sub"><strong class="release-pill" aria-label="Version 5.2 Pixel Art World update">✦ PIXEL ART WORLD · V5.2</strong> New hand-crafted 16-bit terrain, pixel-art explorer and Pip, eight themed worlds, five bonus trails, and 50 coordinate quests.</div></div>
+        <div><div class="brand-kicker">NACHES LEARNING HUB • AN ORIGINAL ADVENTURE</div><h1>COORDINATE <span>PIXEL QUEST</span></h1><div class="brand-sub"><strong class="release-pill" aria-label="Version 5.3 Cartesian Coordinates update">✦ CARTESIAN COORDINATES · V5.3</strong> Correct X/Y axes, four-quadrant puzzles, optional grid lines, and the same 50 pixel-art restorations.</div></div>
       </div>
       <div class="top-actions">
         <div class="level-chip"><span class="level-stars">✦</span> <span id="levelLabel">LVL 1 · APPRENTICE</span><div class="xp-track"><div id="xpFill" class="xp-fill"></div></div></div>
@@ -71,17 +71,17 @@
           <div class="stat-row"><span>◈ Restorations</span><strong id="statQuests">0 / 50</strong></div>
           <div class="stat-row"><span>⚑ Badges</span><strong id="statBadges">0 / 14</strong></div>
         </section>
-        <section class="panel lesson-card"><div class="section-eyebrow">MATH TOOLKIT</div><h3>Coordinates = <span>(X, Y)</span></h3><div class="coordinate-demo"><div class="demo-x">X → move right</div><div class="demo-y">Y ↑ move up</div><div class="demo-origin">(1,1) starts at the bottom left</div></div><p>In painting puzzles, coordinates tell you which <em>square</em> to color—not a grid-line intersection.</p></section>
+        <section class="panel lesson-card"><div class="section-eyebrow">MATH TOOLKIT</div><h3>Coordinates = <span>(X, Y)</span></h3><div class="coordinate-demo"><div class="demo-x">X → move right</div><div class="demo-y">Y ↑ move up</div><div class="demo-origin">Start at (0,0). First two puzzles: positive X/Y only; later puzzles: all 4 quadrants.</div></div><p>The bottom row is the X-axis scale. Later challenges use negative and positive coordinates around (0,0). Color the <em>square</em> at each ordered pair.</p></section>
       </aside>
     </main>
-    <footer class="site-footer"><span>COORDINATE PIXEL QUEST • VERSION 5.2 — PIXEL ART WORLD</span><span>Progress saves in this browser • No account required</span></footer>
+    <footer class="site-footer"><span>COORDINATE PIXEL QUEST • VERSION 5.3 — CARTESIAN COORDINATES</span><span>Progress saves in this browser • No account required</span></footer>
   </div>
 
   <div id="questModal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="paintingTitle" hidden>
     <div class="modal modal-paint">
       <div class="modal-head"><div><div class="section-eyebrow">PIXEL RESTORATION CHALLENGE <span id="paintRegion"></span></div><h2 id="paintingTitle">The Sun Lantern</h2></div><button id="closeQuest" class="close-btn" type="button" aria-label="Save and close puzzle">✕</button></div>
       <div class="paint-layout">
-        <section class="art-section"><div class="grid-heading"><span>RESTORATION CANVAS <b id="gridSize">8 × 8</b></span><span id="filledLabel">0 / 32 cells</span></div><div class="focus-toolbar"><span id="focusLabel" aria-live="polite">FULL ARTWORK</span><button id="btnAutoBrush" class="tiny-btn" type="button" aria-pressed="true" hidden>✓ Automatic brush: ON</button><button id="btnFocus" class="tiny-btn" type="button" aria-pressed="false" hidden>⊞ Focus on a 10×10 area</button></div><div id="paintArea" class="paint-area"><div id="coordinateGrid" class="coordinate-grid" aria-label="Coordinate painting grid"></div></div><div class="grid-footnote">Cells use <strong>bottom-left (1, 1)</strong>. X increases right → and Y increases upward ↑.</div></section>
+        <section class="art-section"><div class="grid-heading"><span>RESTORATION CANVAS <b id="gridSize">8 × 8</b></span><span id="filledLabel">0 / 32 cells</span></div><div class="focus-toolbar"><span id="focusLabel" aria-live="polite">FULL ARTWORK</span><button id="btnGridLines" class="tiny-btn" type="button" aria-pressed="true">▦ Grid lines: ON</button><button id="btnAutoBrush" class="tiny-btn" type="button" aria-pressed="true" hidden>✓ Automatic brush: ON</button><button id="btnFocus" class="tiny-btn" type="button" aria-pressed="false" hidden>⊞ Focus on a 10×10 area</button></div><div class="graph-explainer"><strong id="graphMode">QUADRANT I · X+, Y+</strong><span id="graphOrigin">Origin (0, 0) at the bottom-left corner</span></div><div id="paintArea" class="paint-area"><div class="graph-plot-wrapper"><div class="graph-y-marker">Y ↑</div><div id="coordinateGrid" class="coordinate-grid" aria-label="Cartesian coordinate painting graph"></div><div class="graph-x-marker">X →</div></div></div><div id="gridFootnote" class="grid-footnote">Start at (0, 0) in the bottom-left; X goes right and Y goes up.</div></section>
         <aside class="paint-side">
           <div class="painting-story" id="paintStory"></div>
           <div class="target-card"><div class="section-eyebrow">YOUR NEXT COORDINATE</div><div id="targetText" class="target-text">(1, 1)</div><div class="target-color" id="targetColor">Paint with Sun Gold</div><div class="target-instruction" id="targetInstruction">Select the matching brush color, then click the square.</div></div>
@@ -117,7 +117,7 @@
     <div class="modal modal-info"><div class="modal-head"><div><div class="section-eyebrow" id="infoKicker">YOUR FIELD GUIDE</div><h2 id="infoTitle">How to Play</h2></div><button class="close-btn" id="closeInfo" type="button" aria-label="Close panel">✕</button></div><div id="infoContent" class="info-body"></div></div>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  <script src="data.js?v=5.2.0"></script>
-  <script src="game.js?v=5.2.0"></script>
+  <script src="data.js?v=5.3.0"></script>
+  <script src="game.js?v=5.3.0"></script>
 </body>
 </html>

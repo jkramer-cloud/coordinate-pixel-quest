@@ -4,14 +4,14 @@
 const DATA = window.CPQ;
 const quests = DATA.quests;
 const palette = DATA.palette;
-const W=167,H=35, STORAGE='cpq_pixel_valley_v1';
+const W=167,H=35, STORAGE='cpq_pixel_valley_v2';
 const $ = id => document.getElementById(id);
 const clamp = (n,a,b) => Math.max(a,Math.min(b,n));
 const qById = id => quests.find(q=>q.id===id);
 const key = (x,y) => `${x},${y}`;
 const valid = (x,y) => x>=1&&x<W-1&&y>=1&&y<H-1;
 const totalCells = quests.reduce((n,q)=>n+q.pattern.join('').replaceAll('.','').length,0);
-let state,active=null,brush=null,showHint=false,focusMode=false,showMapCoords=false,toastTimer=0,route=[],pendingQuest=null,shortcutCapture=null,litQuests=[];
+let state,active=null,brush=null,showHint=false,focusMode=false,showMapCoords=false,showGridLines=true,toastTimer=0,route=[],pendingQuest=null,shortcutCapture=null,litQuests=[];
 let cam={x:0,y:0,w:0,h:0,tile:34};
 const canvas=$('worldCanvas'),ctx=canvas.getContext('2d');
 const questModal=$('questModal'), infoModal=$('infoModal');
@@ -20,11 +20,21 @@ function graphicsLevel(){return state?.settings?.graphics||'enhanced';}
 function motionEnabled(){return state?.settings?.motion!==false && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
 function graphicsScale(){return graphicsLevel()==='low'?0:graphicsLevel()==='standard'?1:2;}
 
-function blankState(){return {version:1,player:{x:5,y:9},done:[],paint:{},mistakes:0,hints:{},xp:0,secrets:[],settings:{sound:false,autoBrush:true,keyPrev:'q',keyNext:'e',hotkeysEnabled:true,rightClickCycle:true,graphics:'enhanced',motion:true},welcomeSeen:false};}
-function load(){let s=blankState();try{const raw=JSON.parse(localStorage.getItem(STORAGE)||'null');if(raw&&raw.version===1){s={...s,...raw,player:{...s.player,...raw.player},settings:{...s.settings,...raw.settings}};s.done=Array.isArray(s.done)?s.done.filter(id=>!!qById(id)):[];s.paint=s.paint&&typeof s.paint==='object'?s.paint:{};s.hints=s.hints&&typeof s.hints==='object'?s.hints:{};s.secrets=Array.isArray(s.secrets)?s.secrets:[];s.xp=Math.max(0,Number(s.xp)||0);s.mistakes=Math.max(0,Number(s.mistakes)||0);s.player.x=clamp(Math.round(s.player.x)||5,1,W-2);s.player.y=clamp(Math.round(s.player.y)||9,1,H-2);}}catch(e){/* corrupt save is ignored */}return s;}
+function blankState(){return {version:2,player:{x:5,y:9},done:[],paint:{},mistakes:0,hints:{},xp:0,secrets:[],settings:{sound:false,autoBrush:true,keyPrev:'q',keyNext:'e',hotkeysEnabled:true,rightClickCycle:true,graphics:'enhanced',motion:true,gridLines:true},welcomeSeen:false};}
+function load(){let s=blankState();try{const raw=JSON.parse(localStorage.getItem(STORAGE)||'null');if(raw&&raw.version===2){s={...s,...raw,player:{...s.player,...raw.player},settings:{...s.settings,...raw.settings}};s.done=Array.isArray(s.done)?s.done.filter(id=>!!qById(id)):[];s.paint=s.paint&&typeof s.paint==='object'?s.paint:{};s.hints=s.hints&&typeof s.hints==='object'?s.hints:{};s.secrets=Array.isArray(s.secrets)?s.secrets:[];s.xp=Math.max(0,Number(s.xp)||0);s.mistakes=Math.max(0,Number(s.mistakes)||0);s.player.x=clamp(Math.round(s.player.x)||5,1,W-2);s.player.y=clamp(Math.round(s.player.y)||9,1,H-2);}}catch(e){/* corrupt save is ignored */}return s;}
 function save(){try{localStorage.setItem(STORAGE,JSON.stringify(state));}catch(e){/* private mode may disable saving */}}
+// The two opening restorations teach Quadrant I; every subsequent quest uses
+// signed Cartesian coordinates with the zero axes crossing the canvas.
+const introductoryQuests=new Set(['lamp','tree']);
+function isIntro(q){return introductoryQuests.has(q.id);}
+function limits(q){
+ const w=q.pattern[0].length,n=q.pattern.length;
+ return isIntro(q)?{xmin:1,xmax:w,ymin:1,ymax:n}: {xmin:-Math.floor(w/2),xmax:Math.ceil(w/2)-1,ymin:-Math.floor(n/2),ymax:Math.ceil(n/2)-1};
+}
+function fromArt(q,col,row){const a=limits(q);return {x:a.xmin+col,y:a.ymax-row};}
+function toArt(q,x,y){const a=limits(q);return {col:x-a.xmin,row:a.ymax-y};}
 const cellCache=new Map(),allowedCellCache=new Map();
-function cells(q){if(cellCache.has(q.id))return cellCache.get(q.id);const list=[];const n=q.pattern.length;for(let r=0;r<n;r++)for(let x=0;x<q.pattern[r].length;x++){const code=q.pattern[r][x];if(code!=='.')list.push({x:x+1,y:n-r,code});}cellCache.set(q.id,list);return list;}
+function cells(q){if(cellCache.has(q.id))return cellCache.get(q.id);const list=[];const n=q.pattern.length;for(let row=0;row<n;row++)for(let col=0;col<q.pattern[row].length;col++){const code=q.pattern[row][col];if(code!=='.'){const {x,y}=fromArt(q,col,row);list.push({x,y,code});}}cellCache.set(q.id,list);return list;}
 function progressOf(q){const saved=Array.isArray(state.paint[q.id])?state.paint[q.id]:[];if(!allowedCellCache.has(q.id))allowedCellCache.set(q.id,new Set(cells(q).map(c=>key(c.x,c.y))));const allowed=allowedCellCache.get(q.id);return new Set(saved.filter(k=>allowed.has(k)));}
 function complete(q){return state.done.includes(q.id);}
 function unlocked(q){return q.need.every(id=>state.done.includes(id));}
@@ -426,8 +436,8 @@ function canvasClick(e){if(!questModal.hidden||!infoModal.hidden)return;const re
 // ---------- Coordinate painting ----------
 function orderedCells(q){const arr=cells(q);let s=0;for(const c of q.id)s=(s*31+c.charCodeAt(0))>>>0;return arr.map((v,i)=>({...v,s:seed(v.x,v.y,s^i)})).sort((a,b)=>a.s-b.s);}
 function target(){if(!active)return null;const done=progressOf(active);return orderedCells(active).find(c=>!done.has(key(c.x,c.y)))||null;}
-function openQuest(id){const q=qById(id);if(!q||!unlocked(q)||complete(q))return;route=[];pendingQuest=null;active=q;brush=null;shortcutCapture=null;$('shortcutEditor').hidden=true;showHint=false;focusMode=q.pattern.length>=24||q.pattern.length>12&&window.innerWidth<730; if(state.settings.autoBrush&&q.pattern.length>=24){const first=target();brush=first?.code||null;}clearTimeout(toastTimer);$('toast').hidden=true;questModal.hidden=false;
- $('paintingTitle').textContent=q.title;$('paintRegion').textContent='· '+q.region.toUpperCase();$('paintStory').textContent=q.story+' '+q.lesson;$('gridSize').textContent=`${q.pattern[0].length} × ${q.pattern.length}`;
+function openQuest(id){const q=qById(id);if(!q||!unlocked(q)||complete(q))return;route=[];pendingQuest=null;active=q;brush=null;shortcutCapture=null;$('shortcutEditor').hidden=true;showHint=false;showGridLines=state.settings.gridLines!==false;focusMode=q.pattern.length>=24||q.pattern.length>12&&window.innerWidth<730; if(state.settings.autoBrush&&q.pattern.length>=24){const first=target();brush=first?.code||null;}clearTimeout(toastTimer);$('toast').hidden=true;questModal.hidden=false;
+ $('paintingTitle').textContent=q.title;$('paintRegion').textContent='· '+q.region.toUpperCase();$('paintStory').textContent=q.story+' '+(isIntro(q)?'Quadrant I: the axes meet at the bottom-left (0, 0). X increases right and Y increases up.':'Four quadrants: the blue axes cross at the center origin (0, 0). Left and down are negative; right and up are positive.');$('gridSize').textContent=`${q.pattern[0].length} × ${q.pattern.length}`;
  renderPainting();$('closeQuest').focus();}
 function closeQuest(){questModal.hidden=true;active=null;brush=null;shortcutCapture=null;showHint=false;focusMode=false;save();updateUI();$('worldCanvas').focus();}
 function paletteCodes(){return active?[...new Set(active.pattern.join('').replaceAll('.',''))]:[];}
@@ -484,30 +494,90 @@ function applyShortcutKey(key){
  state.settings[field]=key.toLowerCase();shortcutCapture=null;save();updateShortcutUI();$('shortcutMessage').textContent=`Saved: ${kind==='next'?'next':'previous'} color is ${(key).toUpperCase()}.`;return true;
 }
 
-function renderPainting(){if(!active)return;const q=active,p=progressOf(q),n=q.pattern.length,w=q.pattern[0].length,tgt=target();
- $('filledLabel').textContent=`${p.size} / ${cells(q).length} cells`;$('puzzlePct').textContent=`${Math.round(p.size/cells(q).length*100)}%`;$('puzzleBar').style.width=`${p.size/cells(q).length*100}%`;
+function renderPainting(){
+ if(!active)return;
+ const q=active,p=progressOf(q),n=q.pattern.length,w=q.pattern[0].length,tgt=target(),bounds=limits(q),intro=isIntro(q);
+ $('filledLabel').textContent=`${p.size} / ${cells(q).length} cells`;
+ $('puzzlePct').textContent=`${Math.round(p.size/cells(q).length*100)}%`;
+ $('puzzleBar').style.width=`${p.size/cells(q).length*100}%`;
  if(!tgt){finishQuest(q);return;}
- $('targetText').textContent=`(${tgt.x}, ${tgt.y})`;$('targetColor').textContent=`Paint with ${palette[tgt.code].name}`;$('targetColor').style.color=palette[tgt.code].hex;
- $('btnHint').textContent=showHint?'✧ Hide row & column hint':'✧ Show row & column hint';$('hintCount').textContent=`Hints used here: ${state.hints[q.id]||0}. Hints never cost XP.`;
- const canFocus=w>12;const focusBtn=$('btnFocus');focusBtn.hidden=!canFocus;focusBtn.textContent=focusMode?'▦ Show whole artwork':'⊞ Focus on a 10×10 area';focusBtn.setAttribute('aria-pressed',String(focusMode));
+ $('targetText').textContent=`(${tgt.x}, ${tgt.y})`;
+ $('targetColor').textContent=`Paint with ${palette[tgt.code].name}`;
+ $('targetColor').style.setProperty('--target-color',palette[tgt.code].hex);
+ $('btnHint').textContent=showHint?'✧ Hide row & column hint':'✧ Show row & column hint';
+ $('hintCount').textContent=`Hints used here: ${state.hints[q.id]||0}. Hints never cost XP.`;
+ const canFocus=w>12,focusBtn=$('btnFocus');
+ focusBtn.hidden=!canFocus;
+ focusBtn.textContent=focusMode?'▦ Show whole artwork':'⊞ Focus on a 10×10 area';
+ focusBtn.setAttribute('aria-pressed',String(focusMode));
  const size=focusMode&&canFocus?10:w;
- const xs=focusMode?clamp(tgt.x-5,1,w-size+1):1,ys=focusMode?clamp(tgt.y-5,1,n-size+1):1;
- $('focusLabel').textContent=focusMode?`FOCUS VIEW · X ${xs}–${xs+size-1} · Y ${ys}–${ys+size-1}`:canFocus?`FULL ${w}×${n} CANVAS · Focus view available`:'FULL ARTWORK';
- $('btnAutoBrush').hidden=w<24;$('btnAutoBrush').textContent=state.settings.autoBrush?'✓ Automatic brush: ON':'○ Automatic brush: OFF';$('btnAutoBrush').setAttribute('aria-pressed',String(state.settings.autoBrush));
+ // Focus is computed in display coordinates, so signed values remain correct.
+ const xs=focusMode?clamp(tgt.x-5,bounds.xmin,bounds.xmax-size+1):bounds.xmin;
+ const ys=focusMode?clamp(tgt.y-5,bounds.ymin,bounds.ymax-size+1):bounds.ymin;
+ const fXMax=xs+size-1,fYMax=ys+size-1;
+ $('focusLabel').textContent=focusMode?`FOCUS VIEW · X ${xs} to ${fXMax} · Y ${ys} to ${fYMax}`:canFocus?`FULL ${w}×${n} CANVAS · Focus view available`:'FULL ARTWORK';
+ $('btnAutoBrush').hidden=w<24;
+ $('btnAutoBrush').textContent=state.settings.autoBrush?'✓ Automatic brush: ON':'○ Automatic brush: OFF';
+ $('btnAutoBrush').setAttribute('aria-pressed',String(state.settings.autoBrush));
  if(w>=24&&state.settings.autoBrush)brush=tgt.code;
- renderPalette();const grid=$('coordinateGrid');grid.textContent='';grid.style.setProperty('--n',size);
- const corner=document.createElement('div');corner.className='axis-head';corner.textContent='Y ↑';grid.appendChild(corner);
- for(let x=xs;x<xs+size;x++){const axis=document.createElement('div');axis.className='axis-head'+(showHint&&x===tgt.x?' hinted':'');axis.textContent=x;grid.appendChild(axis);}
- for(let y=ys+size-1;y>=ys;y--){const yLabel=document.createElement('div');yLabel.className='axis-head'+(showHint&&y===tgt.y?' hinted':'');yLabel.textContent=y;grid.appendChild(yLabel);
-   for(let x=xs;x<xs+size;x++){const btn=document.createElement('button');btn.type='button';const c=q.pattern[n-y][x-1];const painted=p.has(key(x,y));btn.className='grid-cell'+(painted?' filled':'')+(showHint&&x===tgt.x?' col-hint':'')+(showHint&&y===tgt.y?' row-hint':'');
-     if(painted)btn.style.setProperty('--cell-color',palette[c].hex);btn.setAttribute('aria-label',`Cell (${x}, ${y}) ${painted?palette[c].name+' painted':'empty'}`);btn.disabled=painted;
-     btn.addEventListener('click',()=>paintCell(x,y,btn));grid.appendChild(btn);
-   }
+ $('btnGridLines').textContent=showGridLines?'▦ Grid lines: ON':'▢ Grid lines: OFF';
+ $('btnGridLines').setAttribute('aria-pressed',String(showGridLines));
+ const plot=$('coordinateGrid');plot.classList.toggle('grid-hidden',!showGridLines);
+ plot.classList.toggle('quadrant-one',intro);
+ plot.classList.toggle('four-quadrants',!intro);
+ plot.style.setProperty('--n',size);
+ $('graphMode').textContent=intro?'QUADRANT I · X+, Y+':'ALL FOUR QUADRANTS · + / −';
+ $('graphOrigin').textContent=intro?'Origin (0, 0) at the bottom-left corner':'Origin (0, 0) where the center axes cross';
+ $('gridFootnote').textContent=intro?'Start at (0, 0) in the bottom-left. Go right for X, then up for Y. Color the numbered square.':'The blue axes meet at (0, 0). Left = −X, right = +X, down = −Y, up = +Y. Color the square at the ordered pair.';
+ renderPalette();
+ plot.textContent='';
+ const cellNodes=new Map();
+ // The Y label is at the left, and the X axis with numbers is at the BOTTOM.
+ const yTitle=document.createElement('div');yTitle.className='graph-y-title';yTitle.textContent='Y ↑';plot.appendChild(yTitle);
+ const zeroXVisible=!intro&&xs<=0&&fXMax>=0;
+ const zeroYVisible=!intro&&ys<=0&&fYMax>=0;
+ for(let y=fYMax;y>=ys;y--){
+  const yLabel=document.createElement('div');
+  yLabel.className='axis-head axis-y-label'+(showHint&&y===tgt.y?' hinted':'')+(y===0?' zero-tick':'');
+  yLabel.textContent=y;
+  plot.appendChild(yLabel);
+  for(let x=xs;x<=fXMax;x++){
+   const {row,col}=toArt(q,x,y),code=q.pattern[row][col],painted=p.has(key(x,y));
+   const btn=document.createElement('button');btn.type='button';
+   btn.className='grid-cell'+(painted?' filled':'')+(showHint&&x===tgt.x?' col-hint':'')+(showHint&&y===tgt.y?' row-hint':'')+(!intro&&x===0?' zero-x':'')+(!intro&&y===0?' zero-y':'')+(!intro&&x===0&&y===0?' zero-origin':'');
+   if(painted)btn.style.setProperty('--cell-color',palette[code].hex);
+   btn.setAttribute('aria-label',`Coordinate (${x}, ${y}) ${painted?palette[code].name+' painted':'empty'}${!intro&&x===0&&y===0?', origin':''}`);
+   btn.title=`(${x}, ${y})${!intro&&x===0&&y===0?' · origin':''}`;
+   btn.disabled=painted;
+   btn.addEventListener('click',()=>paintCell(x,y,btn));
+   cellNodes.set(key(x,y),btn);
+   plot.appendChild(btn);
+  }
  }
+ const corner=document.createElement('div');corner.className='graph-bottom-corner';corner.textContent=intro?'(0,0)':'X →';plot.appendChild(corner);
+ for(let x=xs;x<=fXMax;x++){
+  const axis=document.createElement('div');axis.className='axis-head axis-x-label'+(showHint&&x===tgt.x?' hinted':'')+(x===0?' zero-tick':'');axis.textContent=x;plot.appendChild(axis);
+ }
+ // Anchors use the REAL laid-out cell positions: axes stay aligned at every
+ // canvas size, zoom/focus crop, and responsive screen width.
+ const rect=(x,y)=>{const cell=cellNodes.get(key(x,y));return cell?{l:cell.offsetLeft,t:cell.offsetTop,r:cell.offsetLeft+cell.offsetWidth,b:cell.offsetTop+cell.offsetHeight,cx:cell.offsetLeft+cell.offsetWidth/2,cy:cell.offsetTop+cell.offsetHeight/2}:null;};
+ function axis(className,left,top,width,height){const el=document.createElement('span');el.className='graph-axis '+className;Object.assign(el.style,{left:`${left}px`,top:`${top}px`,width:`${width}px`,height:`${height}px`});el.setAttribute('aria-hidden','true');plot.appendChild(el);}
+ if(intro){
+  const bottomLeft=rect(xs,ys),bottomRight=rect(fXMax,ys),topLeft=rect(xs,fYMax);
+  axis('graph-axis-horizontal',bottomLeft.l,bottomLeft.b-2,bottomRight.r-bottomLeft.l,3);
+  axis('graph-axis-vertical',bottomLeft.l-2,topLeft.t,3,bottomLeft.b-topLeft.t);
+  const dot=document.createElement('span');dot.className='graph-origin-dot';dot.style.left=`${bottomLeft.l-2}px`;dot.style.top=`${bottomLeft.b-2}px`;plot.appendChild(dot);
+ }else{
+  if(zeroXVisible){const top=rect(0,fYMax),bottom=rect(0,ys);axis('graph-axis-vertical',top.cx-1.5,top.t,3,bottom.b-top.t);}
+  if(zeroYVisible){const left=rect(xs,0),right=rect(fXMax,0);axis('graph-axis-horizontal',left.l,left.cy-1.5,right.r-left.l,3);}
+  if(zeroXVisible&&zeroYVisible){const center=rect(0,0),dot=document.createElement('span');dot.className='graph-origin-dot';dot.style.left=`${center.cx-2}px`;dot.style.top=`${center.cy-2}px`;dot.setAttribute('aria-hidden','true');plot.appendChild(dot);}
+ }
+
 }
+
 function paintCell(x,y,element){if(!active)return;const tgt=target();if(!tgt)return;
  if(!brush){feedback('Choose a brush color first.',true);return;}
- if(x!==tgt.x||y!==tgt.y||brush!==tgt.code){state.mistakes++;save();element.classList.remove('wrong');void element.offsetWidth;element.classList.add('wrong');playTone('bad');feedback(x===tgt.x&&y===tgt.y?'Right square! Try the requested brush color.':`Not quite. Read (${tgt.x}, ${tgt.y}): X right, then Y up.`,true);updateUI();return;}
+ if(x!==tgt.x||y!==tgt.y||brush!==tgt.code){state.mistakes++;save();element.classList.remove('wrong');void element.offsetWidth;element.classList.add('wrong');playTone('bad');feedback(x===tgt.x&&y===tgt.y?'Right square! Try the requested brush color.':`Not quite. Read (${tgt.x}, ${tgt.y}): find X along the bottom, then move up or down to Y.`,true);updateUI();return;}
  const done=progressOf(active);done.add(key(x,y));state.paint[active.id]=[...done];state.xp+=4;showHint=false;save();playTone('ok');
  const remaining=cells(active).length-done.size;feedback(remaining?`Great! (${x}, ${y}) is painted. +4 XP · ${remaining} left.`:'Your artwork is complete!');
  updateUI();renderPainting();
@@ -528,12 +598,12 @@ function closeInfo(){infoModal.hidden=true;$('worldCanvas').focus();}
 function openHelp(){showInfo('THE EXPLORER’S FIELD GUIDE','How to restore Pixel Valley',`
  <div class="help-grid"><div class="help-tile"><h3>① Explore the valley</h3><p>Use arrow keys, WASD, the on-screen direction pad, or click the map to walk. Tap a glowing landmark or choose one from the Adventure Quests list to travel there automatically.</p></div>
  <div class="help-tile"><h3>② Open a restoration</h3><p>Walk onto a landmark or stand next to it and press Space. Quests with a lock require earlier restorations.</p></div>
- <div class="help-tile"><h3>③ Read (X, Y)</h3><p>X is the horizontal position, counted from left to right. Y is the vertical position, counted from bottom to top. The bottom-left square is (1,1). The numbers label <strong>cells</strong>, not intersections.</p></div>
+ <div class="help-tile"><h3>③ Read (X, Y)</h3><p>The horizontal X number line runs along the <strong>bottom</strong>; Y runs upward on the left. The first two puzzles use Quadrant I: origin (0,0) at the bottom-left, with only positive numbers. Later quests cross (0,0) at the center and use positive and negative coordinates in all four quadrants. Numbers identify squares to color, while the bold axes show zero.</p></div>
  <div class="help-tile"><h3>④ Paint by coordinates</h3><p>Read the requested color, select the matching brush, then tap the square at those coordinates. Every correct square earns XP. A mistake only gives you another chance.</p></div>
  <div class="help-tile"><h3>⑤ Eight main chapters + five optional trails</h3><p>Finish the original chapters to unlock Prism Tundra (36×36) after the Sunspire, and Celestial Gardens (40×40 and 44×44) after the Prismatic Crossing. Five smaller side areas branch north from the map; they provide optional practice and XP without blocking the main story.</p></div>
- <div class="help-tile"><h3>⑥ Brush shortcuts and hints</h3><p>Show row & column hint highlights the X column and Y row. Large artworks offer a Focus 10×10 view that preserves the true coordinates. For 24×24 and larger puzzles, you may automatically choose the requested brush color to concentrate on plotting. Click colors around the circular palette, click its center or Next button to cycle, right-click the painting grid or wheel to cycle, or use Q/E by default. Customize the keys in the puzzle. Every correct cell saves automatically.</p></div></div>
- <p class="mini-note" style="margin-top:18px">Coordinate convention: both the painting canvas and optional world-map grid use the bottom-left as the origin. The map labels cells from (1,1); map coordinates are not continuous Cartesian graphing points.</p>`);}
-function drawGalleryArt(canvasEl,q,full){const c=canvasEl.getContext('2d'),n=q.pattern.length,w=q.pattern[0].length;const size=Math.min(canvasEl.width/(w+2),canvasEl.height/(n+2));c.clearRect(0,0,canvasEl.width,canvasEl.height);c.fillStyle='#17354a';c.fillRect(0,0,canvasEl.width,canvasEl.height);const x0=(canvasEl.width-w*size)/2,y0=(canvasEl.height-n*size)/2;const p=progressOf(q);for(let y=0;y<n;y++)for(let x=0;x<w;x++){const code=q.pattern[y][x];if(code==='.')continue;const colored=full||p.has(key(x+1,n-y));c.fillStyle=colored?palette[code].hex:'#426078';c.fillRect(Math.round(x0+x*size),Math.round(y0+y*size),Math.ceil(size)-1,Math.ceil(size)-1);}}
+ <div class="help-tile"><h3>⑥ Brush shortcuts and hints</h3><p>Toggle grid lines to see your completed pixel art more clearly. Show row & column hint highlights the X column and Y row. Large artworks offer a Focus 10×10 view that preserves the true coordinates. For 24×24 and larger puzzles, you may automatically choose the requested brush color to concentrate on plotting. Click colors around the circular palette, click its center or Next button to cycle, right-click the painting grid or wheel to cycle, or use Q/E by default. Customize the keys in the puzzle. Every correct cell saves automatically.</p></div></div>
+ <p class="mini-note" style="margin-top:18px">The world-map coordinate display is for navigation; it is separate from the painting graph. In painting, a numbered square represents each integer position. The two training quests use first-quadrant axes; subsequent quests use a Cartesian-style signed plane centered on (0,0).</p>`);}
+function drawGalleryArt(canvasEl,q,full){const c=canvasEl.getContext('2d'),n=q.pattern.length,w=q.pattern[0].length;const size=Math.min(canvasEl.width/(w+2),canvasEl.height/(n+2));c.clearRect(0,0,canvasEl.width,canvasEl.height);c.fillStyle='#17354a';c.fillRect(0,0,canvasEl.width,canvasEl.height);const x0=(canvasEl.width-w*size)/2,y0=(canvasEl.height-n*size)/2;const p=progressOf(q);for(let y=0;y<n;y++)for(let x=0;x<w;x++){const code=q.pattern[y][x];if(code==='.')continue;const coord=fromArt(q,x,y),colored=full||p.has(key(coord.x,coord.y));c.fillStyle=colored?palette[code].hex:'#426078';c.fillRect(Math.round(x0+x*size),Math.round(y0+y*size),Math.ceil(size)-1,Math.ceil(size)-1);}}
 function openGallery(selected=null){let html=`<p>Every landmark you restore appears in the collection. Unfinished art shows only the squares you've already painted.</p><div class="gallery-grid">`;
  for(const q of quests){const done=complete(q),num=progressOf(q).size,total=cells(q).length;html+=`<div class="gallery-item ${!done?'locked':''}"><canvas id="gallery-${q.id}" width="144" height="144" aria-label="${q.title} artwork"></canvas><h3>${q.title}</h3><p>${done?'✓ Restored':unlocked(q)?`${num}/${total} squares`: '🔒 Locked'}</p>${unlocked(q)&&!done?`<button type="button" data-gallery-quest="${q.id}">Continue painting</button>`:''}</div>`;}
  html+='</div><h3 style="margin-top:20px">Explorer badges</h3><div class="badge-list">';const labels=['First Brushstroke','First Restoration','Meadow Guardian','Bridge Builder','100 Pixels','Valley Hero','Sky Lift Engineer','Dawn Phoenix','Marsh Wayfinder','Sunspire Keeper','Prism Pathfinder','Cosmos Artist','Side Trail Scout','Master Restorer'],icons=['🖌','✦','♣','═','▦','★','✧','☀','☾','♛','◇','✿','♧','★'];
@@ -576,7 +646,7 @@ function handleKeyboard(e){
  const dirs={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]};const dir=dirs[e.key.toLowerCase()];if(dir){e.preventDefault();tryMove(...dir);}else if(e.code==='Space'){e.preventDefault();interact();}}
 function init(){state=load();if(!passable(state.player.x,state.player.y))state.player={x:5,y:9};
  $('btnHelp').addEventListener('click',openHelp);$('btnGallery').addEventListener('click',()=>openGallery());$('btnSettings').addEventListener('click',openSettings);
- $('closeInfo').addEventListener('click',closeInfo);$('closeQuest').addEventListener('click',closeQuest);$('saveQuest').addEventListener('click',closeQuest);$('btnHint').addEventListener('click',showHintFn);$('btnFocus').addEventListener('click',()=>{focusMode=!focusMode;renderPainting();});
+ $('closeInfo').addEventListener('click',closeInfo);$('closeQuest').addEventListener('click',closeQuest);$('saveQuest').addEventListener('click',closeQuest);$('btnHint').addEventListener('click',showHintFn);$('btnGridLines').addEventListener('click',()=>{showGridLines=!showGridLines;state.settings.gridLines=showGridLines;save();renderPainting();});$('btnFocus').addEventListener('click',()=>{focusMode=!focusMode;renderPainting();});
  $('btnAutoBrush').addEventListener('click',()=>{state.settings.autoBrush=!state.settings.autoBrush;save();brush=state.settings.autoBrush?target()?.code:null;renderPainting();feedback(state.settings.autoBrush?'Automatic color brush is on. You still need to plot the coordinates.':'Automatic color brush is off. Choose each color yourself.');});
  $('btnPrevColor').addEventListener('click',()=>cycleBrush(-1));
  $('btnNextColor').addEventListener('click',()=>cycleBrush(1));

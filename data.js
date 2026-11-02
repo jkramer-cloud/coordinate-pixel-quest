@@ -1,6 +1,6 @@
 /* Coordinate Pixel Quest — original, self-contained puzzle data. Each character is one colored grid CELL. */
 window.CPQ = Object.freeze({
-  version:'4.0.0',
+  version:'5.3.0',
   palette: {
     Y:{name:'Sun Gold',hex:'#f5c85e'},W:{name:'Moon Cream',hex:'#fff1c4'},B:{name:'Wood Brown',hex:'#a96c48'},
     G:{name:'Leaf Green',hex:'#5fce8c'},L:{name:'Lime',hex:'#b6ec76'},R:{name:'Coral Red',hex:'#f17879'},
